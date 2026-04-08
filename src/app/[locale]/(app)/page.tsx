@@ -18,6 +18,11 @@ export default async function HomePage({
     .single();
 
   // Get all deceased from user's groups
+  const { data: groups } = await supabase
+    .from("family_groups")
+    .select("id, name, group_members!inner(user_id)")
+    .eq("group_members.user_id", user!.id);
+
   const { data: deceased } = await supabase
     .from("deceased")
     .select(`
@@ -28,6 +33,8 @@ export default async function HomePage({
       )
     `)
     .eq("family_groups.group_members.user_id", user!.id);
+
+  const firstGroupId = groups?.[0]?.id;
 
   const upcomingYahrzeits = getUpcomingYahrzeits(deceased || [], 60);
 
@@ -162,13 +169,27 @@ export default async function HomePage({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           <p className="text-lg font-medium mb-2">אין אזכרה קרובה</p>
-          <p className="text-sm mb-4">הוסף נפטרים כדי לעקוב אחרי אזכרה</p>
-          <Link
-            href={`/${locale}/groups`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-          >
-            צור קבוצה משפחתית
-          </Link>
+          <p className="text-sm mb-6">הוסף נפטרים כדי לעקוב אחרי אזכרות</p>
+          <div className="flex flex-col items-center gap-3">
+            {firstGroupId ? (
+              <Link
+                href={`/${locale}/deceased/new?group=${firstGroupId}`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                הוסף נפטר
+              </Link>
+            ) : (
+              <Link
+                href={`/${locale}/groups`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
+              >
+                צור קבוצה משפחתית
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>
