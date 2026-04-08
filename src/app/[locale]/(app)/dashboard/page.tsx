@@ -95,7 +95,7 @@ export default async function DashboardPage({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="font-bold text-lg">יארצייט היום</span>
+            <span className="font-bold text-lg">אזכרה היום</span>
           </div>
           <ul className="space-y-1">
             {today.map((y) => (
@@ -138,7 +138,7 @@ export default async function DashboardPage({
           color="purple"
         />
         <StatCard
-          title="יארצייט ב-30 יום"
+          title="אזכרה ב-30 יום"
           value={upcoming30.length}
           subtitle={thisWeek.length > 0 ? `${thisWeek.length} השבוע` : undefined}
           icon={
@@ -170,10 +170,10 @@ export default async function DashboardPage({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            יארצייט קרוב (30 יום)
+            אזכרה קרובה (30 יום)
           </h2>
           {upcoming30.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">אין יארצייט קרוב</p>
+            <p className="text-sm text-muted-foreground text-center py-4">אין אזכרה קרובה</p>
           ) : (
             <ul className="space-y-2">
               {upcoming30.slice(0, 6).map((y) => (

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { loginWithEmail, loginWithGoogle, sendOtp, verifyOtp } from "@/lib/auth/actions";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { gregorianToHebrew } from "@/lib/hebrew-calendar";
 
 type LoginMode = "password" | "otp" | "otp-verify";
 
@@ -87,6 +88,12 @@ function YahrzeitCandle() {
 export default function LoginPage() {
   const t = useTranslations();
   const [mode, setMode] = useState<LoginMode>("password");
+
+  const today = new Date();
+  const hebrewToday = gregorianToHebrew(today);
+  const gregorianStr = today.toLocaleDateString("he-IL", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
@@ -163,6 +170,10 @@ export default function LoginPage() {
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-foreground tracking-wide">יזכור</h1>
             <p className="text-muted-foreground text-sm mt-1">לזכרם לעד</p>
+            <div className="mt-3 space-y-0.5">
+              <p className="text-xs text-muted-foreground">{gregorianStr}</p>
+              <p className="text-sm font-medium text-primary/80">{hebrewToday.hebrewString}</p>
+            </div>
           </div>
 
           {error && <ErrorMessage message={error} />}

@@ -52,7 +52,7 @@ export default async function CalendarPage({
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">לוח שנה - יארצייט</h1>
+      <h1 className="text-2xl font-bold mb-6">לוח שנה - אזכרה</h1>
 
       {allYahrzeits.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">

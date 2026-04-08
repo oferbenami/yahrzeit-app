@@ -57,7 +57,7 @@ export function buildYahrzeitGCalUrl(
 ): string {
   const relPart = relationship ? ` (${relationship})` : "";
   return buildGoogleCalendarUrl({
-    title: `יארצייט - ${deceasedName}${relPart}`,
+    title: `אזכרה - ${deceasedName}${relPart}`,
     details: `לזכר נשמת ${deceasedName}\n${hebrewDate}`,
     location: cemeteryName || undefined,
     startDate: yahrzeitDate,

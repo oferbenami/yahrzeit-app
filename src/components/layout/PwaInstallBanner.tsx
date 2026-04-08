@@ -89,7 +89,7 @@ export function PwaInstallBanner() {
         <div>
           <p className="text-sm font-semibold mb-1">אפשר התראות</p>
           <p className="text-xs text-muted-foreground mb-2">
-            קבל תזכורות יארצייט ישירות למכשיר
+            קבל תזכורות אזכרה ישירות למכשיר
           </p>
           <button
             onClick={handleEnablePush}

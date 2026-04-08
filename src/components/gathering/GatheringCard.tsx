@@ -46,7 +46,7 @@ export function GatheringCard({
         start.setHours(h, m, 0);
         const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
         return buildGoogleCalendarUrl({
-          title: `כינוס יארצייט - ${deceasedName}`,
+          title: `כינוס אזכרה - ${deceasedName}`,
           details: `${yahrzeitDateHebrew}\n${gathering.notes || ""}`,
           location: [gathering.location_name, gathering.location_address]
             .filter(Boolean)
@@ -166,7 +166,7 @@ export function GatheringCard({
             href={`/api/calendar/export?deceased=${deceasedId}`}
             download
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="ייצא יארצייט ל-.ics"
+            aria-label="ייצא אזכרה ל-.ics"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

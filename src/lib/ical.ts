@@ -89,7 +89,7 @@ export function buildICalEvent(event: ICalEvent): string {
 
 export function buildICalFile(
   events: ICalEvent[],
-  calName = "יארצייט"
+  calName = "אזכרה"
 ): string {
   const header = [
     "BEGIN:VCALENDAR",
@@ -130,7 +130,7 @@ export function buildYahrzeitICalEvents(
       : "";
     return {
       uid: `yahrzeit-${deceased.id}-${date.getFullYear()}@yahrzeit.app`,
-      summary: `יארצייט - ${deceased.full_name}${relPart}`,
+      summary: `אזכרה - ${deceased.full_name}${relPart}`,
       description: `${hebrewDate}\nלזכר נשמת ${deceased.full_name}`,
       dtstart: date,
       allDay: true,

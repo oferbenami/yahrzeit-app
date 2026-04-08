@@ -43,13 +43,13 @@ export default async function YahrzeitPage({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <h1 className="text-2xl font-bold">יארצייט - {deceased.full_name}</h1>
+        <h1 className="text-2xl font-bold">אזכרה - {deceased.full_name}</h1>
       </div>
 
       {/* Upcoming yahrzeits */}
       {upcomingEvents && upcomingEvents.length > 0 && (
         <div className="bg-card border border-border rounded-xl p-5 mb-4">
-          <h2 className="font-semibold mb-3">יארצייט קרוב</h2>
+          <h2 className="font-semibold mb-3">אזכרה קרובה</h2>
           <div className="space-y-2">
             {upcomingEvents.map((event) => (
               <div key={event.id} className="flex justify-between items-center text-sm">

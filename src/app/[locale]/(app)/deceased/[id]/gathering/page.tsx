@@ -78,7 +78,7 @@ export default async function GatheringPage({
       {!existingForNext && (
         <section className="bg-card border border-border rounded-xl p-5 mb-6" aria-labelledby="add-gathering-title">
           <h2 id="add-gathering-title" className="font-semibold mb-4">
-            תכנן כינוס ליארצייט הקרוב
+            תכנן כינוס לאזכרה הקרובה
           </h2>
           <GatheringForm
             deceasedId={id}
@@ -97,7 +97,7 @@ export default async function GatheringPage({
         {gatherings?.length === 0 ? (
           <EmptyState
             title="אין כינוסים מתוכננים"
-            description="תכנן כינוס משפחתי ליארצייט הקרוב"
+            description="תכנן כינוס משפחתי לאזכרה הקרובה"
             icon={
               <svg className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}

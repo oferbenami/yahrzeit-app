@@ -75,7 +75,7 @@ export function GatheringForm({
       {error && <ErrorMessage message={error} />}
 
       <p className="text-sm text-muted-foreground">
-        יארצייט: <strong>{yahrzeitDateHebrew}</strong>
+        אזכרה: <strong>{yahrzeitDateHebrew}</strong>
       </p>
 
       <div>

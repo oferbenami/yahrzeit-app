@@ -88,11 +88,11 @@
     }
   },
   "yahrzeit": {
-    "title": "יארצייט",
-    "nextYahrzeit": "יארצייט הקרוב",
+    "title": "אזכרה",
+    "nextYahrzeit": "אזכרה הקרובה",
     "hebrewDate": "תאריך עברי",
     "gregorianDate": "תאריך לועזי",
-    "daysUntil": "ימים עד יארצייט",
+    "daysUntil": "ימים עד אזכרה",
     "today": "היום",
     "tomorrow": "מחר",
     "daysUntilFormat": "עוד {days} ימים",
@@ -125,8 +125,8 @@
     }
   },
   "calendar": {
-    "title": "לוח שנה — יארצייט",
-    "exportAll": "ייצא כל יארצייט (.ics)",
+    "title": "לוח שנה — אזכרה",
+    "exportAll": "ייצא כל אזכרה (.ics)",
     "addToGoogle": "הוסף ל-Google Calendar",
     "exportIcs": "ייצא .ics",
     "noDeceased": "אין נפטרים רשומים"

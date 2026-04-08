@@ -69,10 +69,10 @@ export function buildYahrzeitPushPayload(
 ): PushPayload {
   const title =
     daysUntil === 0
-      ? `יארצייט היום - ${deceasedName}`
+      ? `אזכרה היום - ${deceasedName}`
       : daysUntil === 1
-      ? `תזכורת: יארצייט ${deceasedName} מחר`
-      : `תזכורת: יארצייט ${deceasedName} בעוד ${daysUntil} ימים`;
+      ? `תזכורת: אזכרה ${deceasedName} מחר`
+      : `תזכורת: אזכרה ${deceasedName} בעוד ${daysUntil} ימים`;
 
   return {
     title,

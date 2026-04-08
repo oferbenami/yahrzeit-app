@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     return buildYahrzeitICalEvents(d, yahrzeitDates, appUrl);
   });
 
-  const icsContent = buildICalFile(allICalEvents, "יארצייט משפחתי");
+  const icsContent = buildICalFile(allICalEvents, "אזכרה משפחתית");
 
   const filename = deceasedId
     ? `yahrzeit-${deceasedId.slice(0, 8)}.ics`
