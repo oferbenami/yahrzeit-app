@@ -72,7 +72,7 @@ export function AppNav({ locale }: { locale: string }) {
       {/* Desktop sidebar */}
       <nav className="hidden md:flex flex-col w-64 min-h-screen bg-card border-e border-border p-4" aria-label="ניווט ראשי">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary">יארצייט</h1>
+          <h1 className="text-2xl font-bold text-primary">יזכור</h1>
           <p className="text-xs text-muted-foreground">לזכרם לעד</p>
         </div>
         <div className="flex-1 space-y-1">

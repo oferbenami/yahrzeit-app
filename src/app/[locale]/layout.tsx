@@ -16,15 +16,15 @@ const heebo = Heebo({
 
 export const metadata: Metadata = {
   title: {
-    default: "יארצייט - לזכרם לעד",
-    template: "%s | יארצייט",
+    default: "יזכור - לזכרם לעד",
+    template: "%s | יזכור",
   },
-  description: "אפליקציה לניהול יארצייט ותזכורות זיכרון משפחתיות",
+  description: "אפליקציה לניהול יזכור ותזכורות זיכרון משפחתיות",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "יארצייט",
+    title: "יזכור",
   },
   formatDetection: { telephone: false },
   other: {

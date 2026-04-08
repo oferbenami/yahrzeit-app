@@ -47,7 +47,7 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "יארצייט", body: event.data.text() };
+    payload = { title: "יזכור", body: event.data.text() };
   }
 
   const options = {
@@ -67,7 +67,7 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "יארצייט", options)
+    self.registration.showNotification(payload.title || "יזכור", options)
   );
 });
 

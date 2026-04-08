@@ -1,7 +1,7 @@
 {
-  "name": "יארצייט - לזכרם לעד",
-  "short_name": "יארצייט",
-  "description": "אפליקציה לניהול יארצייט ותזכורות זיכרון משפחתיות",
+  "name": "יזכור - לזכרם לעד",
+  "short_name": "יזכור",
+  "description": "אפליקציה לניהול יזכור ותזכורות זיכרון משפחתיות",
   "start_url": "/he",
   "display": "standalone",
   "background_color": "#ffffff",
