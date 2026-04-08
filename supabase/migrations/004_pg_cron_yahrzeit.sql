@@ -1,0 +1,39 @@
+-- ============================================================
+-- pg_cron: Calculate yahrzeit events annually
+-- Run this in Supabase SQL editor after enabling pg_cron extension
+-- ============================================================
+
+-- Enable pg_cron (requires Supabase Pro or self-hosted)
+-- CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Schedule yahrzeit calculation to run on Jan 1 each year (or monthly)
+-- SELECT cron.schedule(
+--   'calculate-yahrzeits-annually',
+--   '0 6 1 1 *',  -- Every Jan 1 at 06:00
+--   $$
+--   SELECT net.http_post(
+--     url := current_setting('app.supabase_url') || '/functions/v1/calculate-yahrzeits',
+--     headers := jsonb_build_object(
+--       'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
+--       'Content-Type', 'application/json'
+--     ),
+--     body := '{}'::jsonb
+--   );
+--   $$
+-- );
+
+-- Schedule daily notification check at 08:00 IL time
+-- SELECT cron.schedule(
+--   'send-yahrzeit-notifications',
+--   '0 6 * * *',  -- 08:00 Israel time (UTC+2) = 06:00 UTC
+--   $$
+--   SELECT net.http_post(
+--     url := current_setting('app.supabase_url') || '/functions/v1/send-notifications',
+--     headers := jsonb_build_object(
+--       'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
+--       'Content-Type', 'application/json'
+--     ),
+--     body := '{}'::jsonb
+--   );
+--   $$
+-- );
