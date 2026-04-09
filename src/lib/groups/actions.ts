@@ -115,6 +115,52 @@ export async function removeMember(groupId: string, memberId: string) {
   return { success: true };
 }
 
+export async function uploadGroupPhoto(groupId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "לא מחובר" };
+
+  const photoFile = formData.get("photo") as File;
+  if (!photoFile || photoFile.size === 0) return { error: "לא נבחרה תמונה" };
+
+  const ext = photoFile.name.split(".").pop();
+  const fileName = `groups/${groupId}/${Date.now()}.${ext}`;
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from("deceased-photos")
+    .upload(fileName, photoFile, { upsert: true });
+  if (uploadError || !uploadData) return { error: uploadError?.message ?? "שגיאת העלאה" };
+
+  const photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
+
+  const { error } = await supabase
+    .from("family_groups")
+    .update({ photo_url: photoUrl })
+    .eq("id", groupId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/[locale]/(app)/groups/${groupId}`, "page");
+  return { photoUrl };
+}
+
+export async function addDeceasedToGroup(deceasedId: string, groupId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "לא מחובר" };
+
+  const { error } = await supabase
+    .from("deceased_groups")
+    .insert({ deceased_id: deceasedId, group_id: groupId });
+
+  if (error) {
+    if (error.code === "23505") return { error: "הנפטר כבר משויך לקבוצה זו" };
+    return { error: error.message };
+  }
+
+  revalidatePath(`/[locale]/(app)/groups/${groupId}`, "page");
+  return { success: true };
+}
+
 export async function regenerateInviteCode(groupId: string) {
   const supabase = await createClient();
   const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();

@@ -1,5 +1,68 @@
 import { HDate, months } from "@hebcal/core";
 
+/**
+ * Convert a number (1–30) to Hebrew gematria letters
+ * e.g. 1→א  2→ב  15→טו  20→כ  29→כט  30→ל
+ */
+export function numberToHebrewLetters(n: number): string {
+  if (n < 1 || n > 30) return String(n);
+  // Special cases to avoid writing God's name
+  if (n === 15) return "ט״ו";
+  if (n === 16) return "ט״ז";
+  const tens = ["", "י", "כ", "ל"];
+  const ones = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"];
+  const t = Math.floor(n / 10);
+  const o = n % 10;
+  const letters = (tens[t] ?? "") + (ones[o] ?? "");
+  // Add gershayim for 2+ letters, geresh for 1 letter
+  if (letters.length === 1) return letters + "׳";
+  return letters.slice(0, -1) + '״' + letters.slice(-1);
+}
+
+/**
+ * Convert a Hebrew year (e.g. 5785) to Hebrew letters (e.g. תשפ״ה)
+ * Drops the thousands digit as is customary in Jewish calendars
+ */
+export function yearToHebrewLetters(hebrewYear: number): string {
+  const y = hebrewYear % 1000;
+  const hundredsMap: [number, string][] = [
+    [900, "תתק"], [800, "תת"], [700, "תש"], [600, "תר"], [500, "תק"],
+    [400, "ת"],   [300, "ש"],  [200, "ר"],  [100, "ק"],
+  ];
+  const tensMap: [number, string][] = [
+    [90, "צ"], [80, "פ"], [70, "ע"], [60, "ס"], [50, "נ"],
+    [40, "מ"], [30, "ל"], [20, "כ"], [10, "י"],
+  ];
+  const onesMap: [number, string][] = [
+    [9, "ט"], [8, "ח"], [7, "ז"], [6, "ו"], [5, "ה"],
+    [4, "ד"], [3, "ג"], [2, "ב"], [1, "א"],
+  ];
+
+  let result = "";
+  let rem = y;
+  for (const [val, s] of hundredsMap) {
+    if (rem >= val) { result += s; rem -= val; }
+  }
+  if (rem === 16) { result += "טז"; rem = 0; }
+  else if (rem === 15) { result += "טו"; rem = 0; }
+  else {
+    for (const [val, s] of tensMap)  { if (rem >= val) { result += s; rem -= val; } }
+    for (const [val, s] of onesMap)  { if (rem >= val) { result += s; rem -= val; } }
+  }
+
+  if (result.length === 1) return result + "׳";
+  return result.slice(0, -1) + "״" + result.slice(-1);
+}
+
+/**
+ * Format a YYYY-MM-DD string as DD/MM/YYYY
+ */
+export function formatGregorianDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 export const HEBREW_MONTHS = [
   { value: 7,  label: "תשרי" },
   { value: 8,  label: "חשוון" },

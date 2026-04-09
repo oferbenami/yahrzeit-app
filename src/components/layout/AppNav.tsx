@@ -147,28 +147,29 @@ export function AppNav({ locale }: { locale: string }) {
         </form>
       </nav>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — fixed, safe-area aware */}
       <nav
         className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t"
         style={{
           background: "rgba(253,247,238,0.97)",
           borderColor: "#e0caa0",
           backdropFilter: "blur(12px)",
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}
         aria-label="ניווט תחתון"
       >
-        <div className="flex">
+        <div className="flex w-full">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== base && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex-1 flex flex-col items-center gap-0.5 py-2 transition-colors"
+                className="flex-1 flex flex-col items-center gap-0.5 py-2 transition-colors min-w-0"
                 style={{ color: isActive ? "#b8860b" : "#8b6a4f" }}
               >
                 {item.icon}
-                <span className="text-xs">{item.label}</span>
+                <span className="text-xs leading-none truncate w-full text-center">{item.label}</span>
                 {isActive && (
                   <span className="w-4 h-0.5 rounded-full mt-0.5" style={{ background: "#c9a84c" }} />
                 )}

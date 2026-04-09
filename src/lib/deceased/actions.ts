@@ -103,6 +103,8 @@ export async function createDeceased(formData: FormData) {
       cemetery_block: (formData.get("cemetery_block") as string) || null,
       cemetery_plot: (formData.get("cemetery_plot") as string) || null,
       cemetery_notes: (formData.get("cemetery_notes") as string) || null,
+      cemetery_lat: formData.get("cemetery_lat") ? parseFloat(formData.get("cemetery_lat") as string) : null,
+      cemetery_lng: formData.get("cemetery_lng") ? parseFloat(formData.get("cemetery_lng") as string) : null,
       relationship_label: relationshipLabel,
       relationship_degree: relationshipDegree || null,
       notes: (formData.get("notes") as string) || null,
@@ -213,6 +215,34 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
 
   revalidatePath(`/[locale]/(app)/deceased/${deceasedId}`, "page");
   return { id: deceasedId };
+}
+
+export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "לא מחובר" };
+
+  const photoFile = formData.get("photo") as File;
+  if (!photoFile || photoFile.size === 0) return { error: "לא נבחרה תמונה" };
+
+  const ext = photoFile.name.split(".").pop();
+  const fileName = `${user.id}/${Date.now()}.${ext}`;
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from("deceased-photos")
+    .upload(fileName, photoFile, { upsert: true });
+  if (uploadError || !uploadData) return { error: uploadError?.message ?? "שגיאת העלאה" };
+
+  const photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
+
+  const { error } = await supabase
+    .from("deceased")
+    .update({ photo_url: photoUrl })
+    .eq("id", deceasedId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/[locale]/(app)/deceased/${deceasedId}`, "page");
+  return { photoUrl };
 }
 
 export async function deleteDeceased(deceasedId: string) {
