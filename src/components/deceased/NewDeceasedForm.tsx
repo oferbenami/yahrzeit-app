@@ -12,6 +12,7 @@ import {
   yearToHebrewLetters,
 } from "@/lib/hebrew-calendar";
 import { createDeceased, searchDeceased, upsertUserDeceasedRelationship } from "@/lib/deceased/actions";
+import { analyzeGravestone } from "@/lib/deceased/analyze-gravestone";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PhotoPicker } from "@/components/ui/PhotoPicker";
@@ -110,6 +111,59 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [gravestoneFile, setGravestoneFile] = useState<File | null>(null);
   const [gravestonePreview, setGravestonePreview] = useState<string | null>(null);
+
+  // Gravestone analysis
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analyzeSuccess, setAnalyzeSuccess] = useState(false);
+
+  async function handleAnalyzeGravestone(file: File) {
+    setAnalyzeLoading(true);
+    setAnalyzeError(null);
+    setAnalyzeSuccess(false);
+
+    const fd = new FormData();
+    fd.append("image", file);
+    const result = await analyzeGravestone(fd);
+
+    if (result.error) {
+      setAnalyzeError(result.error);
+      setAnalyzeLoading(false);
+      return;
+    }
+
+    const d = result.data!;
+
+    // Auto-fill fields with extracted data
+    if (d.firstName) setFirstName(d.firstName);
+    if (d.lastName) setLastName(d.lastName);
+    if (d.fatherName) {
+      // Set via DOM since it's a plain name input
+      const el = document.querySelector<HTMLInputElement>('input[name="father_name"]');
+      if (el) { el.value = d.fatherName; el.dispatchEvent(new Event("input", { bubbles: true })); }
+    }
+    if (d.hebrewDay && d.hebrewMonth && d.hebrewYear) {
+      setDateMode("hebrew");
+      setHebrewDay(String(d.hebrewDay));
+      setHebrewMonth(String(d.hebrewMonth));
+      setHebrewYear(String(d.hebrewYear));
+    } else if (d.deathDateGregorian) {
+      setDateMode("gregorian");
+      setGregorianDate(d.deathDateGregorian);
+    }
+    if (d.birthDateGregorian) {
+      const el = document.querySelector<HTMLInputElement>('input[name="birth_date_gregorian"]');
+      if (el) { el.value = d.birthDateGregorian; el.dispatchEvent(new Event("input", { bubbles: true })); }
+    }
+    if (d.cemeteryName) {
+      const el = document.querySelector<HTMLInputElement>('input[name="cemetery_name"]');
+      if (el) { el.value = d.cemeteryName; el.dispatchEvent(new Event("input", { bubbles: true })); }
+    }
+
+    setAnalyzeSuccess(true);
+    setAnalyzeLoading(false);
+    setTimeout(() => setAnalyzeSuccess(false), 4000);
+  }
 
   // GPS
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -508,15 +562,81 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
         </div>
       </div>
 
-      {/* Gravestone photo */}
-      <div className="p-4" style={sectionStyle}>
-        <h2 className="font-bold text-sm mb-3" style={{ color: "var(--foreground)" }}>תמונת מצבה</h2>
+      {/* Gravestone photo + AI extraction */}
+      <div className="p-4 space-y-3" style={sectionStyle}>
+        <div>
+          <h2 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>תמונת מצבה</h2>
+          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+            צרף תמונת מצבה — המערכת תנסה לחלץ את הפרטים אוטומטית
+          </p>
+        </div>
+
         <PhotoPicker
           name="gravestone_photo"
           preview={gravestonePreview}
           label="הוסף תמונת מצבה"
-          onFile={(f) => { setGravestoneFile(f); setGravestonePreview(URL.createObjectURL(f)); }}
+          onFile={(f) => {
+            setGravestoneFile(f);
+            setGravestonePreview(URL.createObjectURL(f));
+            setAnalyzeError(null);
+            setAnalyzeSuccess(false);
+          }}
         />
+
+        {/* Extract button — shown after photo is picked */}
+        {gravestoneFile && (
+          <button
+            type="button"
+            onClick={() => handleAnalyzeGravestone(gravestoneFile)}
+            disabled={analyzeLoading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm disabled:opacity-60 transition-all"
+            style={{
+              background: analyzeSuccess
+                ? "linear-gradient(135deg, #4ade80, #16a34a)"
+                : "linear-gradient(135deg, #6366f1, #4f46e5)",
+              color: "white",
+              boxShadow: analyzeSuccess
+                ? "0 4px 14px rgba(74,222,128,0.3)"
+                : "0 4px 14px rgba(99,102,241,0.3)",
+            }}
+          >
+            {analyzeLoading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                מנתח את המצבה...
+              </>
+            ) : analyzeSuccess ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                הפרטים מולאו בהצלחה!
+              </>
+            ) : (
+              <>
+                {/* Sparkle / AI icon */}
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z" />
+                  <path d="M19 15l.94 2.81L22 19l-2.06.19L19 22l-.94-2.81L16 19l2.06-.19z" opacity={0.6} />
+                  <path d="M5 3l.63 1.87L7 6l-1.37.13L5 8l-.63-1.87L3 6l1.37-.13z" opacity={0.6} />
+                </svg>
+                חלץ פרטים מהתמונה בעזרת AI
+              </>
+            )}
+          </button>
+        )}
+
+        {analyzeError && (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-xs" style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#dc2626" }}>
+            <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {analyzeError}
+          </div>
+        )}
       </div>
 
       {/* Notes */}
