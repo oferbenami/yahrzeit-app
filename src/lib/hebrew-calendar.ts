@@ -1,5 +1,21 @@
 import { HDate, months } from "@hebcal/core";
 
+export const HEBREW_MONTHS = [
+  { value: 7,  label: "תשרי" },
+  { value: 8,  label: "חשוון" },
+  { value: 9,  label: "כסלו" },
+  { value: 10, label: "טבת" },
+  { value: 11, label: "שבט" },
+  { value: 12, label: "אדר א׳" },
+  { value: 13, label: "אדר ב׳" },
+  { value: 1,  label: "ניסן" },
+  { value: 2,  label: "אייר" },
+  { value: 3,  label: "סיון" },
+  { value: 4,  label: "תמוז" },
+  { value: 5,  label: "אב" },
+  { value: 6,  label: "אלול" },
+];
+
 export interface HebrewDateInfo {
   day: number;
   month: number;
@@ -12,6 +28,26 @@ export interface YahrzeitInfo {
   gregorianDate: Date;
   hebrewDate: HebrewDateInfo;
   shabbatEveBefore: Date | null;
+}
+
+/**
+ * Convert Hebrew date to Gregorian
+ */
+export function hebrewToGregorian(day: number, month: number, year: number): Date | null {
+  try {
+    const daysInMonth = HDate.daysInMonth(month, year);
+    if (day < 1 || day > daysInMonth) return null;
+    return new HDate(day, month, year).greg();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get days in a Hebrew month
+ */
+export function getHebrewDaysInMonth(month: number, year: number): number {
+  try { return HDate.daysInMonth(month, year); } catch { return 30; }
 }
 
 /**

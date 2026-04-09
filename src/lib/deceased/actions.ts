@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { gregorianToHebrew } from "@/lib/hebrew-calendar";
+import { gregorianToHebrew, hebrewToGregorian } from "@/lib/hebrew-calendar";
 
 export async function createDeceased(formData: FormData) {
   const supabase = await createClient();
@@ -11,24 +10,44 @@ export async function createDeceased(formData: FormData) {
   if (!user) return { error: "לא מחובר" };
 
   const groupId = formData.get("group_id") as string;
-  const fullName = formData.get("full_name") as string;
-  const deathDateStr = formData.get("death_date_gregorian") as string;
+  const firstName = (formData.get("first_name") as string)?.trim();
+  const lastName = (formData.get("last_name") as string)?.trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  const dateMode = formData.get("date_mode") as string || "gregorian";
+  const afterSunset = formData.get("death_after_sunset") === "true";
 
-  if (!fullName?.trim() || !deathDateStr || !groupId) {
-    return { error: "שדות חובה חסרים" };
+  if (!fullName || !groupId) return { error: "שדות חובה חסרים" };
+
+  let deathDateGregorian: string;
+  let hebrewDeath: ReturnType<typeof gregorianToHebrew>;
+
+  if (dateMode === "hebrew") {
+    const heDay = parseInt(formData.get("death_hebrew_day") as string);
+    const heMonth = parseInt(formData.get("death_hebrew_month") as string);
+    const heYear = parseInt(formData.get("death_hebrew_year") as string);
+    if (!heDay || !heMonth || !heYear) return { error: "תאריך עברי חסר" };
+    const gDate = hebrewToGregorian(heDay, heMonth, heYear);
+    if (!gDate) return { error: "תאריך עברי לא תקין" };
+    deathDateGregorian = gDate.toISOString().split("T")[0];
+    hebrewDeath = gregorianToHebrew(gDate);
+    // Override with exact Hebrew values entered
+    hebrewDeath.day = heDay;
+    hebrewDeath.month = heMonth;
+  } else {
+    const deathDateStr = formData.get("death_date_gregorian") as string;
+    if (!deathDateStr) return { error: "תאריך פטירה חסר" };
+    deathDateGregorian = deathDateStr;
+    // For Hebrew date: if after sunset, advance 1 day
+    const dateForHebrew = new Date(deathDateStr + "T12:00:00");
+    if (afterSunset) dateForHebrew.setDate(dateForHebrew.getDate() + 1);
+    hebrewDeath = gregorianToHebrew(dateForHebrew);
   }
 
-  // Convert death date to Hebrew
-  const deathDate = new Date(deathDateStr);
-  const hebrewDeath = gregorianToHebrew(deathDate);
-
-  // Handle birth date
-  const birthDateStr = formData.get("birth_date_gregorian") as string;
-  let birthDateHebrew: string | null = null;
-  if (birthDateStr) {
-    const birthDate = new Date(birthDateStr);
-    birthDateHebrew = gregorianToHebrew(birthDate).hebrewString;
-  }
+  // Birth date
+  const birthDateStr = (formData.get("birth_date_gregorian") as string) || null;
+  const birthDateHebrew = birthDateStr
+    ? gregorianToHebrew(new Date(birthDateStr + "T12:00:00")).hebrewString
+    : null;
 
   // Handle photo upload
   let photoUrl: string | null = null;
@@ -39,12 +58,8 @@ export async function createDeceased(formData: FormData) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("deceased-photos")
       .upload(fileName, photoFile, { upsert: true });
-
     if (!uploadError && uploadData) {
-      const { data: urlData } = supabase.storage
-        .from("deceased-photos")
-        .getPublicUrl(uploadData.path);
-      photoUrl = urlData.publicUrl;
+      photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
 
@@ -57,44 +72,101 @@ export async function createDeceased(formData: FormData) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("deceased-photos")
       .upload(fileName, gravestoneFile, { upsert: true });
-
     if (!uploadError && uploadData) {
-      const { data: urlData } = supabase.storage
-        .from("deceased-photos")
-        .getPublicUrl(uploadData.path);
-      gravestonePhotoUrl = urlData.publicUrl;
+      gravestonePhotoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
+
+  const relationshipLabel = (formData.get("relationship_label") as string) || null;
+  const relationshipDegree = (formData.get("relationship_degree") as string) || null;
 
   const { data: deceased, error } = await supabase
     .from("deceased")
     .insert({
       group_id: groupId,
       created_by: user.id,
-      full_name: fullName.trim(),
+      full_name: fullName,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      father_name: (formData.get("father_name") as string) || null,
+      mother_name: (formData.get("mother_name") as string) || null,
       photo_url: photoUrl,
       gravestone_photo_url: gravestonePhotoUrl,
-      birth_date_gregorian: birthDateStr || null,
+      birth_date_gregorian: birthDateStr,
       birth_date_hebrew: birthDateHebrew,
-      death_date_gregorian: deathDateStr,
+      death_date_gregorian: deathDateGregorian,
       death_date_hebrew: hebrewDeath.hebrewString,
       death_date_hebrew_day: hebrewDeath.day,
       death_date_hebrew_month: hebrewDeath.month,
+      death_after_sunset: afterSunset,
       cemetery_name: (formData.get("cemetery_name") as string) || null,
       cemetery_block: (formData.get("cemetery_block") as string) || null,
       cemetery_plot: (formData.get("cemetery_plot") as string) || null,
       cemetery_notes: (formData.get("cemetery_notes") as string) || null,
-      relationship_label: (formData.get("relationship_label") as string) || null,
-      relationship_degree: (formData.get("relationship_degree") as string) || null,
+      relationship_label: relationshipLabel,
+      relationship_degree: relationshipDegree || null,
       notes: (formData.get("notes") as string) || null,
     })
     .select()
     .single();
 
-  if (error) return { error: error.message };
+  if (error) {
+    console.error("[createDeceased]", error);
+    return { error: error.message };
+  }
+
+  // Save personal relationship for this user
+  if (relationshipLabel) {
+    await supabase.from("user_deceased_relationships").upsert({
+      user_id: user.id,
+      deceased_id: deceased.id,
+      relationship_label: relationshipLabel,
+      relationship_degree: relationshipDegree || null,
+    }, { onConflict: "user_id,deceased_id" });
+  }
 
   revalidatePath("/[locale]/(app)/groups/[id]", "page");
-  redirect(`/he/deceased/${deceased.id}`);
+  return { id: deceased.id };
+}
+
+export async function searchDeceased(query: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !query.trim()) return { data: [] };
+
+  const { data } = await supabase
+    .from("deceased")
+    .select(`
+      id, full_name, death_date_hebrew, relationship_label,
+      family_groups!inner(name, group_members!inner(user_id))
+    `)
+    .eq("family_groups.group_members.user_id", user.id)
+    .ilike("full_name", `%${query.trim()}%`)
+    .limit(8);
+
+  return { data: data || [] };
+}
+
+export async function upsertUserDeceasedRelationship(
+  deceasedId: string,
+  relationshipLabel: string,
+  relationshipDegree: string
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "לא מחובר" };
+
+  const { error } = await supabase
+    .from("user_deceased_relationships")
+    .upsert({
+      user_id: user.id,
+      deceased_id: deceasedId,
+      relationship_label: relationshipLabel || null,
+      relationship_degree: (relationshipDegree as "first" | "second" | "extended") || null,
+    }, { onConflict: "user_id,deceased_id" });
+
+  if (error) return { error: error.message };
+  return { success: true };
 }
 
 export async function updateDeceased(deceasedId: string, formData: FormData) {
@@ -106,7 +178,7 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
   let hebrewDeathData = {};
 
   if (deathDateStr) {
-    const hebrewDeath = gregorianToHebrew(new Date(deathDateStr));
+    const hebrewDeath = gregorianToHebrew(new Date(deathDateStr + "T12:00:00"));
     hebrewDeathData = {
       death_date_gregorian: deathDateStr,
       death_date_hebrew: hebrewDeath.hebrewString,
@@ -116,10 +188,9 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
   }
 
   const birthDateStr = formData.get("birth_date_gregorian") as string;
-  let birthDateHebrew: string | null = null;
-  if (birthDateStr) {
-    birthDateHebrew = gregorianToHebrew(new Date(birthDateStr)).hebrewString;
-  }
+  const birthDateHebrew = birthDateStr
+    ? gregorianToHebrew(new Date(birthDateStr + "T12:00:00")).hebrewString
+    : null;
 
   const { error } = await supabase
     .from("deceased")
@@ -141,7 +212,7 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath(`/[locale]/(app)/deceased/${deceasedId}`, "page");
-  redirect(`/he/deceased/${deceasedId}`);
+  return { id: deceasedId };
 }
 
 export async function deleteDeceased(deceasedId: string) {
@@ -149,13 +220,9 @@ export async function deleteDeceased(deceasedId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "לא מחובר" };
 
-  const { error } = await supabase
-    .from("deceased")
-    .delete()
-    .eq("id", deceasedId);
-
+  const { error } = await supabase.from("deceased").delete().eq("id", deceasedId);
   if (error) return { error: error.message };
 
   revalidatePath("/[locale]/(app)/groups/[id]", "page");
-  redirect("/he/groups");
+  return { success: true };
 }
