@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { createGroup, joinGroup } from "@/lib/groups/actions";
+import { CreateGroupForm, JoinGroupForm } from "@/components/groups/CreateGroupForm";
 
 export default async function GroupsPage({
   params,
@@ -10,16 +10,6 @@ export default async function GroupsPage({
   const { locale } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  async function createGroupAction(formData: FormData) {
-    "use server";
-    await createGroup(formData);
-  }
-
-  async function joinGroupAction(formData: FormData) {
-    "use server";
-    await joinGroup(formData);
-  }
 
   const { data: groups } = await supabase
     .from("family_groups")
@@ -67,42 +57,13 @@ export default async function GroupsPage({
       {/* Create group */}
       <div className="bg-card border border-border rounded-xl p-5 mb-4">
         <h2 className="font-semibold mb-3">צור קבוצה חדשה</h2>
-        <form action={createGroupAction} className="flex gap-2">
-          <input
-            name="name"
-            type="text"
-            placeholder="שם הקבוצה"
-            required
-            className="flex-1 px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
-          >
-            צור
-          </button>
-        </form>
+        <CreateGroupForm />
       </div>
 
       {/* Join group */}
       <div className="bg-card border border-border rounded-xl p-5">
         <h2 className="font-semibold mb-3">הצטרף לקבוצה</h2>
-        <form action={joinGroupAction} className="flex gap-2">
-          <input
-            name="invite_code"
-            type="text"
-            placeholder="קוד הזמנה"
-            required
-            className="flex-1 px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring uppercase"
-            dir="ltr"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors whitespace-nowrap"
-          >
-            הצטרף
-          </button>
-        </form>
+        <JoinGroupForm />
       </div>
     </div>
   );

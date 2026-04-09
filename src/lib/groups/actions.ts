@@ -21,14 +21,22 @@ export async function createGroup(formData: FormData) {
     .select()
     .single();
 
-  if (groupError) return { error: groupError.message };
+  if (groupError) {
+    console.error("[createGroup] insert error:", groupError);
+    return { error: groupError.message };
+  }
 
   // Add creator as admin
-  await supabase.from("group_members").insert({
+  const { error: memberError } = await supabase.from("group_members").insert({
     group_id: group.id,
     user_id: user.id,
     role: "admin",
   });
+
+  if (memberError) {
+    console.error("[createGroup] member insert error:", memberError);
+    return { error: memberError.message };
+  }
 
   revalidatePath("/[locale]/(app)/groups", "page");
   redirect(`/he/groups/${group.id}`);
