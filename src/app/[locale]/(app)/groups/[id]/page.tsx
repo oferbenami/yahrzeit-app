@@ -38,35 +38,41 @@ export default async function GroupDetailPage({
 
   const isAdmin = myMembership.role === "admin";
 
-  // Get deceased in this group (via junction table)
-  const { data: deceasedLinks } = await supabase
-    .from("deceased_groups")
-    .select(`
-      deceased:deceased_id(id, full_name, death_date_hebrew, relationship_label, photo_url)
-    `)
-    .eq("group_id", id);
-
   type DeceasedRow = { id: string; full_name: string; death_date_hebrew: string; relationship_label?: string; photo_url?: string };
-  const deceasedList: DeceasedRow[] = (deceasedLinks ?? [])
-    .map((link: { deceased: DeceasedRow | DeceasedRow[] | null }) => {
-      const d = link.deceased;
-      if (!d) return null;
-      return Array.isArray(d) ? d[0] : d;
-    })
-    .filter((d): d is DeceasedRow => !!d);
 
-  // Also include deceased with group_id = id (legacy / primary group)
-  const { data: legacyDeceased } = await supabase
+  // Primary: query deceased by group_id (original / main group)
+  const { data: primaryDeceased } = await supabase
     .from("deceased")
     .select("id, full_name, death_date_hebrew, relationship_label, photo_url")
     .eq("group_id", id)
     .order("full_name");
 
-  // Merge, deduplicate by id
-  const allDeceasedMap = new Map<string, typeof deceasedList[0]>();
-  for (const d of legacyDeceased ?? []) allDeceasedMap.set(d.id, d);
-  for (const d of deceasedList) if (d) allDeceasedMap.set(d.id, d);
-  const mergedDeceased = Array.from(allDeceasedMap.values()).sort((a, b) => a.full_name.localeCompare(b.full_name, "he"));
+  // Secondary: get extra deceased linked via junction table (multi-group)
+  const { data: junctionLinks } = await supabase
+    .from("deceased_groups")
+    .select("deceased_id")
+    .eq("group_id", id);
+
+  const primaryIds = new Set((primaryDeceased ?? []).map((d) => d.id));
+  const extraIds = (junctionLinks ?? [])
+    .map((l: { deceased_id: string }) => l.deceased_id)
+    .filter((jid) => !primaryIds.has(jid));
+
+  let extraDeceased: DeceasedRow[] = [];
+  if (extraIds.length > 0) {
+    const { data } = await supabase
+      .from("deceased")
+      .select("id, full_name, death_date_hebrew, relationship_label, photo_url")
+      .in("id", extraIds);
+    extraDeceased = (data ?? []) as DeceasedRow[];
+  }
+
+  // Merge and sort
+  const allDeceasedMap = new Map<string, DeceasedRow>();
+  for (const d of primaryDeceased ?? []) allDeceasedMap.set(d.id, d as DeceasedRow);
+  for (const d of extraDeceased) allDeceasedMap.set(d.id, d);
+  const mergedDeceased = Array.from(allDeceasedMap.values()).sort((a, b) =>
+    a.full_name.localeCompare(b.full_name, "he"));
 
   const memberCount = group.group_members?.length ?? 0;
   const deceasedCount = mergedDeceased.length;
