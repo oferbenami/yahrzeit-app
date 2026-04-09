@@ -1,6 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { getUpcomingYahrzeits } from "@/lib/hebrew-calendar";
+import { gregorianToHebrew } from "@/lib/hebrew-calendar";
+
+function CandleIcon() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2c0 0-2 2-2 4s2 2 2 2 2-2 2-2-2-4-2-4z" fill="currentColor" opacity={0.6} />
+      <rect x="9" y="8" width="6" height="14" rx="1" />
+    </svg>
+  );
+}
 
 export default async function HomePage({
   params,
@@ -12,12 +22,8 @@ export default async function HomePage({
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: userProfile } = await supabase
-    .from("users")
-    .select("full_name")
-    .eq("id", user!.id)
-    .single();
+    .from("users").select("full_name").eq("id", user!.id).single();
 
-  // Get all deceased from user's groups
   const { data: groups } = await supabase
     .from("family_groups")
     .select("id, name, group_members!inner(user_id)")
@@ -25,47 +31,73 @@ export default async function HomePage({
 
   const { data: deceased } = await supabase
     .from("deceased")
-    .select(`
-      id, full_name, death_date_hebrew_day, death_date_hebrew_month,
-      photo_url, relationship_label,
-      family_groups!inner (
-        group_members!inner (user_id)
-      )
-    `)
+    .select(`id, full_name, death_date_hebrew_day, death_date_hebrew_month, photo_url, relationship_label,
+      family_groups!inner(group_members!inner(user_id))`)
     .eq("family_groups.group_members.user_id", user!.id);
 
   const firstGroupId = groups?.[0]?.id;
-
   const upcomingYahrzeits = getUpcomingYahrzeits(deceased || [], 60);
-
   const todayYahrzeits = upcomingYahrzeits.filter((y) => y.daysUntil === 0);
   const thisWeek = upcomingYahrzeits.filter((y) => y.daysUntil > 0 && y.daysUntil <= 7);
   const upcoming = upcomingYahrzeits.filter((y) => y.daysUntil > 7);
 
+  const today = new Date();
+  const hebrewToday = gregorianToHebrew(today);
+  const firstName = userProfile?.full_name?.split(" ")[0] || "";
+
+  const cardStyle = {
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    borderRadius: "1rem",
+    boxShadow: "0 2px 12px rgba(184,134,11,0.08)",
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">
-          שלום, {userProfile?.full_name?.split(" ")[0] || ""}
-        </h1>
-        <p className="text-muted-foreground">
-          {new Date().toLocaleDateString("he-IL", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
+      <div className="mb-6 animate-fade-in-up">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+              שלום{firstName ? `, ${firstName}` : ""}
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+              {today.toLocaleDateString("he-IL", { weekday: "long", month: "long", day: "numeric" })}
+            </p>
+            <p className="text-sm font-semibold mt-0.5" style={{ color: "var(--primary)" }}>
+              {hebrewToday.hebrewString}
+            </p>
+          </div>
+          {firstGroupId && (
+            <Link
+              href={`/${locale}/deceased/new?group=${firstGroupId}`}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-all"
+              style={{ background: "linear-gradient(135deg, #c9a84c 0%, #8b6010 100%)", boxShadow: "0 3px 10px rgba(184,134,11,0.3)" }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+              הוסף נפטר
+            </Link>
+          )}
+        </div>
+        {/* Gold divider */}
+        <div className="h-px mt-4" style={{ background: "linear-gradient(to right, transparent, #c9a84c40, transparent)" }} />
       </div>
 
       {/* Today's yahrzeits */}
       {todayYahrzeits.length > 0 && (
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-5 mb-4">
-          <h2 className="font-semibold text-primary mb-3 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        <div
+          className="p-5 mb-4 animate-fade-in-up"
+          style={{
+            ...cardStyle,
+            background: "linear-gradient(135deg, #fff8e8 0%, #fef3d0 100%)",
+            border: "1px solid #c9a84c60",
+            boxShadow: "0 4px 20px rgba(184,134,11,0.15)",
+          }}
+        >
+          <h2 className="font-bold mb-3 flex items-center gap-2" style={{ color: "#b8860b" }}>
+            <CandleIcon />
             אזכרה היום
           </h2>
           <div className="space-y-3">
@@ -73,16 +105,18 @@ export default async function HomePage({
               <Link
                 key={y.deceasedId}
                 href={`/${locale}/deceased/${y.deceasedId}`}
-                className="flex items-center gap-3 bg-white/50 dark:bg-white/5 rounded-lg p-3 hover:bg-white/70 transition-colors"
+                className="flex items-center gap-3 rounded-xl p-3 transition-all"
+                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid #e0caa0" }}
               >
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shrink-0"
+                  style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)" }}
+                >
                   {y.fullName[0]}
                 </div>
                 <div>
-                  <p className="font-semibold">{y.fullName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {y.yahrzeit.hebrewDate.hebrewString}
-                  </p>
+                  <p className="font-semibold text-sm">{y.fullName}</p>
+                  <p className="text-xs" style={{ color: "#8b6a4f" }}>{y.yahrzeit.hebrewDate.hebrewString}</p>
                 </div>
               </Link>
             ))}
@@ -92,30 +126,36 @@ export default async function HomePage({
 
       {/* This week */}
       {thisWeek.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-5 mb-4">
-          <h2 className="font-semibold mb-3">השבוע הקרוב</h2>
-          <div className="space-y-2">
+        <div className="p-5 mb-4 animate-fade-in-up" style={cardStyle}>
+          <h2 className="font-bold mb-3 text-sm flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+            <svg className="w-4 h-4" style={{ color: "var(--primary)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            השבוע הקרוב
+          </h2>
+          <div className="space-y-1">
             {thisWeek.map((y) => (
               <Link
                 key={y.deceasedId}
                 href={`/${locale}/deceased/${y.deceasedId}`}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary transition-colors"
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all hover:opacity-80"
+                style={{ background: "var(--muted)" }}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-muted-foreground">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                    style={{ background: "linear-gradient(135deg, #c9a84c80, #8b601080)" }}
+                  >
                     {y.fullName[0]}
                   </div>
                   <span className="font-medium text-sm">{y.fullName}</span>
                 </div>
                 <div className="text-end">
-                  <p className="text-sm text-primary font-medium">
+                  <p className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
                     בעוד {y.daysUntil} {y.daysUntil === 1 ? "יום" : "ימים"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {y.yahrzeit.gregorianDate.toLocaleDateString("he-IL", {
-                      month: "short",
-                      day: "numeric",
-                    })}
+                  <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                    {y.yahrzeit.gregorianDate.toLocaleDateString("he-IL", { month: "short", day: "numeric" })}
                   </p>
                 </div>
               </Link>
@@ -124,38 +164,32 @@ export default async function HomePage({
         </div>
       )}
 
-      {/* Upcoming (8-60 days) */}
+      {/* Upcoming */}
       {upcoming.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-5 mb-4">
-          <h2 className="font-semibold mb-3">קרוב לבוא</h2>
-          <div className="space-y-2">
+        <div className="p-5 mb-4 animate-fade-in-up" style={cardStyle}>
+          <h2 className="font-bold mb-3 text-sm" style={{ color: "var(--foreground)" }}>קרוב לבוא</h2>
+          <div className="space-y-1">
             {upcoming.slice(0, 5).map((y) => (
               <Link
                 key={y.deceasedId}
                 href={`/${locale}/deceased/${y.deceasedId}`}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary transition-colors"
+                className="flex items-center justify-between px-3 py-2 rounded-lg transition-all hover:opacity-80"
+                style={{ background: "var(--muted)" }}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-muted-foreground">
-                    {y.fullName[0]}
-                  </div>
-                  <span className="text-sm">{y.fullName}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {y.yahrzeit.gregorianDate.toLocaleDateString("he-IL", {
-                    month: "long",
-                    day: "numeric",
-                  })}
+                <span className="text-sm font-medium">{y.fullName}</span>
+                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                  {y.yahrzeit.gregorianDate.toLocaleDateString("he-IL", { month: "long", day: "numeric" })}
                 </p>
               </Link>
             ))}
           </div>
           <Link
             href={`/${locale}/calendar`}
-            className="mt-3 flex items-center gap-1 text-sm text-primary hover:underline"
+            className="mt-3 flex items-center gap-1 text-xs font-semibold hover:underline"
+            style={{ color: "var(--primary)" }}
           >
             הצג הכל בלוח שנה
-            <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
@@ -164,27 +198,34 @@ export default async function HomePage({
 
       {/* Empty state */}
       {upcomingYahrzeits.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <p className="text-lg font-medium mb-2">אין אזכרה קרובה</p>
-          <p className="text-sm mb-6">הוסף נפטרים כדי לעקוב אחרי אזכרות</p>
+        <div className="text-center py-14 animate-fade-in-up">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ background: "linear-gradient(135deg, #f5e9d4, #e0caa0)" }}
+          >
+            <svg className="w-10 h-10" style={{ color: "#c9a84c" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <p className="text-lg font-bold mb-1" style={{ color: "var(--foreground)" }}>אין אזכרה קרובה</p>
+          <p className="text-sm mb-6" style={{ color: "var(--muted-foreground)" }}>הוסף נפטרים כדי לעקוב אחרי אזכרות</p>
           <div className="flex flex-col items-center gap-3">
             {firstGroupId ? (
               <Link
                 href={`/${locale}/deceased/new?group=${firstGroupId}`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all"
+                style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)", boxShadow: "0 4px 14px rgba(184,134,11,0.35)" }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                 </svg>
                 הוסף נפטר
               </Link>
             ) : (
               <Link
                 href={`/${locale}/groups`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all"
+                style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)", boxShadow: "0 4px 14px rgba(184,134,11,0.35)" }}
               >
                 צור קבוצה משפחתית
               </Link>

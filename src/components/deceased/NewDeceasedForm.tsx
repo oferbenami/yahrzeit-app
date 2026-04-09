@@ -33,8 +33,8 @@ const DEGREE_LABELS: Record<string, string> = {
   first: "ראשונה", second: "שנייה", extended: "מורחבת",
 };
 
-const inputClass = "w-full px-3 py-2.5 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm";
-const labelClass = "block text-sm font-medium mb-1";
+const inputClass = "w-full px-3 py-2.5 border border-[color:var(--border)] rounded-xl bg-white/70 text-[color:var(--foreground)] placeholder:text-[color:var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)] text-sm transition-shadow";
+const labelClass = "block text-xs font-semibold mb-1 text-[color:var(--muted-foreground)]";
 
 interface Group { id: string; name: string; }
 
@@ -186,8 +186,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       {error && <ErrorMessage message={error} />}
 
       {/* Search existing */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h2 className="font-semibold mb-3 flex items-center gap-2">
+      <div className="memorial-card p-5">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)] mb-3 flex items-center gap-2">
           <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -263,8 +263,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       )}
 
       {/* Basic info */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h2 className="font-semibold">פרטים בסיסיים</h2>
+      <div className="memorial-card p-5 space-y-4">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)]">פרטים בסיסיים</h2>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -329,22 +329,24 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       </div>
 
       {/* Death date */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h2 className="font-semibold">תאריך פטירה <span className="text-destructive">*</span></h2>
+      <div className="memorial-card p-5 space-y-4">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)]">תאריך פטירה <span className="text-destructive">*</span></h2>
 
         {/* Mode tabs */}
         <div className="flex rounded-lg border border-border overflow-hidden">
           <button
             type="button"
             onClick={() => setDateMode("gregorian")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${dateMode === "gregorian" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-secondary"}`}
+            className={`flex-1 py-2 text-sm font-semibold transition-all ${dateMode === "gregorian" ? "text-white" : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)]"}`}
+            style={dateMode === "gregorian" ? { background: "linear-gradient(135deg, #c9a84c, #8b6010)" } : {}}
           >
             תאריך לועזי
           </button>
           <button
             type="button"
             onClick={() => setDateMode("hebrew")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${dateMode === "hebrew" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-secondary"}`}
+            className={`flex-1 py-2 text-sm font-semibold transition-all ${dateMode === "hebrew" ? "text-white" : "text-[color:var(--muted-foreground)] hover:bg-[color:var(--muted)]"}`}
+            style={dateMode === "hebrew" ? { background: "linear-gradient(135deg, #c9a84c, #8b6010)" } : {}}
           >
             תאריך עברי
           </button>
@@ -364,7 +366,7 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
             {convertedDisplay && (
               <div className="flex items-center gap-2 text-sm bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">תאריך עברי:</span>
-                <span className="font-semibold text-primary">{convertedDisplay}</span>
+                <span className="font-bold text-sm text-[color:var(--foreground)] text-primary">{convertedDisplay}</span>
               </div>
             )}
           </div>
@@ -413,7 +415,7 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
             {convertedGregorian && (
               <div className="flex items-center gap-2 text-sm bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
                 <span className="text-muted-foreground">תאריך לועזי:</span>
-                <span className="font-semibold text-primary">{convertedGregorian}</span>
+                <span className="font-bold text-sm text-[color:var(--foreground)] text-primary">{convertedGregorian}</span>
               </div>
             )}
           </div>
@@ -451,8 +453,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       </div>
 
       {/* Relationship */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h2 className="font-semibold">קשר משפחתי</h2>
+      <div className="memorial-card p-5 space-y-4">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)]">קשר משפחתי</h2>
 
         <div>
           <label className={labelClass}>קשר אליי</label>
@@ -470,7 +472,7 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
         {relDegree && (
           <div className="flex items-center gap-2 text-sm bg-secondary rounded-lg px-3 py-2">
             <span className="text-muted-foreground">דרגת קרבה שחושבה אוטומטית:</span>
-            <span className="font-semibold">{DEGREE_LABELS[relDegree]}</span>
+            <span className="font-bold text-sm text-[color:var(--foreground)]">{DEGREE_LABELS[relDegree]}</span>
           </div>
         )}
 
@@ -490,8 +492,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       </div>
 
       {/* Birth date */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-        <h2 className="font-semibold">תאריך לידה (רשות)</h2>
+      <div className="memorial-card p-5 space-y-3">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)]">תאריך לידה (רשות)</h2>
         <input
           name="birth_date_gregorian"
           type="date"
@@ -501,8 +503,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       </div>
 
       {/* Cemetery */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-        <h2 className="font-semibold">פרטי בית קברות</h2>
+      <div className="memorial-card p-5 space-y-3">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)]">פרטי בית קברות</h2>
         <input name="cemetery_name" type="text" placeholder="שם בית קברות" className={inputClass} />
         <div className="grid grid-cols-2 gap-3">
           <input name="cemetery_block" type="text" placeholder="חלקה" className={inputClass} />
@@ -512,8 +514,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
       </div>
 
       {/* Gravestone photo */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h2 className="font-semibold mb-3">תמונת מצבה</h2>
+      <div className="memorial-card p-5">
+        <h2 className="font-bold text-sm text-[color:var(--foreground)] mb-3">תמונת מצבה</h2>
         <label className="cursor-pointer">
           <div className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-input rounded-lg hover:bg-secondary transition-colors text-sm text-muted-foreground">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -542,7 +544,8 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          className="flex-1 py-3 rounded-xl font-bold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+          style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)", boxShadow: "0 4px 14px rgba(184,134,11,0.35)" }}
         >
           {loading ? <LoadingSpinner size="sm" label="שומר..." /> : "שמור נפטר"}
         </button>

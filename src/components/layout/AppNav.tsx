@@ -13,10 +13,18 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+function StarOfDavidIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2L9.5 7H4l4 3.5L6.5 16 12 12.5 17.5 16 16 10.5 20 7h-5.5L12 2z
+               M12 5.2l1.4 3.1H17l-2.4 2.1.9 3.3L12 11.8l-3.5 1.9.9-3.3L7 8.3h3.6L12 5.2z" />
+    </svg>
+  );
+}
+
 export function AppNav({ locale }: { locale: string }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
-
   const base = `/${locale}`;
 
   const navItems: NavItem[] = [
@@ -70,11 +78,32 @@ export function AppNav({ locale }: { locale: string }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <nav className="hidden md:flex flex-col w-64 min-h-screen bg-card border-e border-border p-4" aria-label="ניווט ראשי">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary">יזכור</h1>
-          <p className="text-xs text-muted-foreground">לזכרם לעד</p>
+      <nav
+        className="hidden md:flex flex-col w-64 min-h-screen p-4 border-e"
+        style={{
+          background: "linear-gradient(180deg, #fdf7ee 0%, #f5e9d4 100%)",
+          borderColor: "#e0caa0",
+        }}
+        aria-label="ניווט ראשי"
+      >
+        {/* Logo */}
+        <div className="mb-8 px-2">
+          <div className="flex items-center gap-2.5 mb-1">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, #c9a84c 0%, #8b6010 100%)" }}
+            >
+              <StarOfDavidIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold leading-none" style={{ color: "#b8860b" }}>יזכור</h1>
+              <p className="text-xs leading-none mt-0.5" style={{ color: "#8b6a4f" }}>לזכרם לעד</p>
+            </div>
+          </div>
+          <div className="h-px mt-4" style={{ background: "linear-gradient(to right, transparent, #c9a84c, transparent)" }} />
         </div>
+
+        {/* Nav items */}
         <div className="flex-1 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== base && pathname.startsWith(item.href));
@@ -82,37 +111,52 @@ export function AppNav({ locale }: { locale: string }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
+                style={isActive ? {
+                  background: "linear-gradient(135deg, #c9a84c22 0%, #c9a84c11 100%)",
+                  color: "#b8860b",
+                  borderLeft: "3px solid #c9a84c",
+                  fontWeight: 700,
+                } : {
+                  color: "#8b6a4f",
+                }}
               >
                 {item.icon}
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium text-sm">{item.label}</span>
               </Link>
             );
           })}
         </div>
-        <div className="flex items-center gap-2 mb-2">
+
+        <div className="flex items-center gap-2 mb-2 px-2">
           <ThemeToggle />
           <LocaleSwitcher />
         </div>
+
         <form action={logout}>
           <button
             type="submit"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-colors"
+            style={{ color: "#8b6a4f" }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span className="font-medium">{t("logout")}</span>
+            <span className="font-medium text-sm">{t("logout")}</span>
           </button>
         </form>
       </nav>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-card border-t border-border z-50" aria-label="ניווט תחתון">
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t"
+        style={{
+          background: "rgba(253,247,238,0.97)",
+          borderColor: "#e0caa0",
+          backdropFilter: "blur(12px)",
+        }}
+        aria-label="ניווט תחתון"
+      >
         <div className="flex">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== base && pathname.startsWith(item.href));
@@ -120,12 +164,14 @@ export function AppNav({ locale }: { locale: string }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
+                className="flex-1 flex flex-col items-center gap-0.5 py-2 transition-colors"
+                style={{ color: isActive ? "#b8860b" : "#8b6a4f" }}
               >
                 {item.icon}
                 <span className="text-xs">{item.label}</span>
+                {isActive && (
+                  <span className="w-4 h-0.5 rounded-full mt-0.5" style={{ background: "#c9a84c" }} />
+                )}
               </Link>
             );
           })}

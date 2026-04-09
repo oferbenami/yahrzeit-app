@@ -1,23 +1,26 @@
 @import "tailwindcss";
 
-/* ── Design tokens ─────────────────────────────────────────────────────── */
+/* ── Design tokens — warm memorial palette ─────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
-  --card: #ffffff;
-  --card-foreground: #111827;
-  --primary: #1a56db;
+  --background: #fdf7ee;
+  --foreground: #3a2a1e;
+  --card: #fffdf8;
+  --card-foreground: #3a2a1e;
+  --primary: #b8860b;
   --primary-foreground: #ffffff;
-  --secondary: #f3f4f6;
-  --secondary-foreground: #374151;
-  --muted: #f9fafb;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --input: #d1d5db;
-  --ring: #1a56db;
-  --radius: 0.5rem;
-  --destructive: #dc2626;
+  --secondary: #f5e9d4;
+  --secondary-foreground: #6b4c35;
+  --muted: #f0e4cc;
+  --muted-foreground: #8b6a4f;
+  --border: #e0caa0;
+  --input: #d4b896;
+  --ring: #c9a84c;
+  --radius: 0.75rem;
+  --destructive: #c0392b;
   --destructive-foreground: #ffffff;
+  --gold: #c9a84c;
+  --gold-light: #f0d890;
+  --sky: #87b8d8;
 }
 
 @theme inline {
@@ -27,40 +30,39 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-    --card: #1e293b;
-    --card-foreground: #f1f5f9;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --secondary: #1e293b;
-    --secondary-foreground: #cbd5e1;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --border: #334155;
-    --input: #475569;
-    --ring: #3b82f6;
-    --destructive: #ef4444;
+    --background: #1c1208;
+    --foreground: #f0e4cc;
+    --card: #261a0c;
+    --card-foreground: #f0e4cc;
+    --primary: #d4a84c;
+    --primary-foreground: #1c1208;
+    --secondary: #2e1f0e;
+    --secondary-foreground: #c8a87c;
+    --muted: #2e1f0e;
+    --muted-foreground: #9b8060;
+    --border: #4a3520;
+    --input: #5a4030;
+    --ring: #d4a84c;
+    --destructive: #e05252;
     --destructive-foreground: #ffffff;
   }
 }
 
-/* Manual dark mode via .dark class (from ThemeProvider) */
 :root.dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #cbd5e1;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --border: #334155;
-  --input: #475569;
-  --ring: #3b82f6;
-  --destructive: #ef4444;
+  --background: #1c1208;
+  --foreground: #f0e4cc;
+  --card: #261a0c;
+  --card-foreground: #f0e4cc;
+  --primary: #d4a84c;
+  --primary-foreground: #1c1208;
+  --secondary: #2e1f0e;
+  --secondary-foreground: #c8a87c;
+  --muted: #2e1f0e;
+  --muted-foreground: #9b8060;
+  --border: #4a3520;
+  --input: #5a4030;
+  --ring: #d4a84c;
+  --destructive: #e05252;
   --destructive-foreground: #ffffff;
 }
 
@@ -78,11 +80,29 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── WCAG AA: Focus styles ─────────────────────────────────────────────── */
-/* Remove default outline and use our accessible replacement */
-:focus {
-  outline: none;
+/* ── Memorial card style ───────────────────────────────────────────────── */
+.memorial-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 12px rgba(184,134,11,0.08);
 }
+
+.memorial-card:hover {
+  box-shadow: 0 4px 20px rgba(184,134,11,0.14);
+  border-color: var(--ring);
+}
+
+/* ── Gold divider ──────────────────────────────────────────────────────── */
+.gold-divider {
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  border: none;
+  margin: 1rem 0;
+}
+
+/* ── WCAG AA: Focus styles ─────────────────────────────────────────────── */
+:focus { outline: none; }
 
 :focus-visible {
   outline: 3px solid var(--ring);
@@ -90,24 +110,19 @@ body {
   border-radius: var(--radius);
 }
 
-/* Interactive elements always get visible focus ring */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [role="button"]:focus-visible,
-[role="checkbox"]:focus-visible,
-[role="link"]:focus-visible,
 [tabindex]:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
 
-/* ── WCAG AA: Minimum touch target size ────────────────────────────────── */
-button,
-a,
-[role="button"] {
+/* ── WCAG AA: Touch targets ────────────────────────────────────────────── */
+button, a, [role="button"] {
   min-height: 44px;
   min-width: 44px;
   display: inline-flex;
@@ -115,15 +130,13 @@ a,
   justify-content: center;
 }
 
-/* Override for inline/text links */
-p a,
-.inline-link {
+p a, .inline-link {
   min-height: unset;
   min-width: unset;
   display: inline;
 }
 
-/* ── Skip navigation link ──────────────────────────────────────────────── */
+/* ── Skip nav ──────────────────────────────────────────────────────────── */
 .skip-nav {
   position: absolute;
   top: -100%;
@@ -136,12 +149,9 @@ p a,
   font-weight: 600;
   transition: top 0.2s;
 }
+.skip-nav:focus { top: 0; }
 
-.skip-nav:focus {
-  top: 0;
-}
-
-/* ── Screen reader only utility ────────────────────────────────────────── */
+/* ── Screen reader only ────────────────────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -149,7 +159,7 @@ p a,
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip: rect(0,0,0,0);
   white-space: nowrap;
   border: 0;
 }
@@ -164,24 +174,39 @@ p a,
   }
 }
 
-/* ── WCAG AA: Selection color ──────────────────────────────────────────── */
+/* ── Selection ─────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: var(--gold-light);
+  color: var(--foreground);
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--muted); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* ── Candle flame animation ────────────────────────────────────────────── */
+@keyframes flicker {
+  0%   { transform: rotate(-3deg) scaleX(0.95) scaleY(1.0); }
+  25%  { transform: rotate(2deg)  scaleX(1.05) scaleY(0.97); }
+  50%  { transform: rotate(-2deg) scaleX(0.98) scaleY(1.03); }
+  75%  { transform: rotate(3deg)  scaleX(1.02) scaleY(0.96); }
+  100% { transform: rotate(-1deg) scaleX(1.0)  scaleY(1.02); }
 }
-::-webkit-scrollbar-track {
-  background: var(--secondary);
+@keyframes glow {
+  0%   { opacity: 0.6; transform: scale(0.95); }
+  100% { opacity: 1.0; transform: scale(1.1); }
 }
-::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
-  border-radius: 3px;
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--foreground);
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out both;
 }
