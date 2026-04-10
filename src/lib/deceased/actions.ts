@@ -28,11 +28,15 @@ export async function createDeceased(formData: FormData) {
     if (!heDay || !heMonth || !heYear) return { error: "תאריך עברי חסר" };
     const gDate = hebrewToGregorian(heDay, heMonth, heYear);
     if (!gDate) return { error: "תאריך עברי לא תקין" };
-    deathDateGregorian = gDate.toISOString().split("T")[0];
     hebrewDeath = gregorianToHebrew(gDate);
     // Override with exact Hebrew values entered
     hebrewDeath.day = heDay;
     hebrewDeath.month = heMonth;
+    // If died before midnight (night portion of Hebrew day), Gregorian date is previous day
+    if (formData.get("death_before_midnight_hebrew") === "true") {
+      gDate.setDate(gDate.getDate() - 1);
+    }
+    deathDateGregorian = gDate.toISOString().split("T")[0];
   } else {
     const deathDateStr = formData.get("death_date_gregorian") as string;
     if (!deathDateStr) return { error: "תאריך פטירה חסר" };

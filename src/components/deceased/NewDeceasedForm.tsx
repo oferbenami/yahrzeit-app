@@ -71,6 +71,7 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
   const [dateMode, setDateMode] = useState<"gregorian" | "hebrew">("gregorian");
   const [gregorianDate, setGregorianDate] = useState("");
   const [afterSunset, setAfterSunset] = useState(false);
+  const [hebrewBeforeMidnight, setHebrewBeforeMidnight] = useState(false);
   const [hebrewDay, setHebrewDay] = useState("");
   const [hebrewMonth, setHebrewMonth] = useState("7");
   const [hebrewYear, setHebrewYear] = useState(getCurrentHebrewYear().toString());
@@ -94,13 +95,14 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
     try {
       const g = hebrewToGregorian(parseInt(hebrewDay), parseInt(hebrewMonth), parseInt(hebrewYear));
       if (g) {
+        if (hebrewBeforeMidnight) g.setDate(g.getDate() - 1);
         const [y, m, d] = g.toISOString().split("T")[0].split("-");
         setConvertedGregorian(`${d}/${m}/${y}`);
       } else {
         setConvertedGregorian("תאריך לא תקין");
       }
     } catch { setConvertedGregorian(""); }
-  }, [hebrewDay, hebrewMonth, hebrewYear, dateMode]);
+  }, [hebrewDay, hebrewMonth, hebrewYear, dateMode, hebrewBeforeMidnight]);
 
   const hebrewDaysInMonth = hebrewMonth && hebrewYear
     ? getHebrewDaysInMonth(parseInt(hebrewMonth), parseInt(hebrewYear))
@@ -242,10 +244,11 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
     }
     if (photoFile) fd.set("photo", photoFile);
     if (gravestoneFile) fd.set("gravestone_photo", gravestoneFile);
+    if (dateMode === "hebrew") fd.set("death_before_midnight_hebrew", hebrewBeforeMidnight.toString());
 
     const result = await createDeceased(fd);
     if (result?.error) { setError(result.error); setLoading(false); }
-    else if (result?.id) { router.push(`/${locale}/deceased/${result.id}`); }
+    else if (result?.id) { router.refresh(); router.push(`/${locale}/deceased/${result.id}`); }
   }
 
   const sectionStyle = { background: "var(--card)", border: "1px solid var(--border)", borderRadius: "1rem", boxShadow: "0 2px 10px rgba(184,134,11,0.07)" };
@@ -452,6 +455,21 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
                 <span className="font-bold" style={{ color: "var(--primary)" }} dir="ltr">{convertedGregorian}</span>
               </div>
             )}
+            {/* Midnight toggle for Hebrew mode */}
+            <div className="rounded-xl p-3 space-y-2" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+              <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>שעת הפטירה ביחס לחצות</p>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>משפיע על חישוב התאריך הלועזי</p>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="hebrew_midnight" checked={!hebrewBeforeMidnight} onChange={() => setHebrewBeforeMidnight(false)} />
+                  <span className="text-xs font-medium">ביום / אחרי חצות</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="hebrew_midnight" checked={hebrewBeforeMidnight} onChange={() => setHebrewBeforeMidnight(true)} />
+                  <span className="text-xs font-medium">בלילה לפני חצות</span>
+                </label>
+              </div>
+            </div>
           </div>
         )}
 
