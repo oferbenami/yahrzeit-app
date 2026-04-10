@@ -248,7 +248,7 @@ export function NewDeceasedForm({ locale, groups, initialGroupId }: Props) {
 
     const result = await createDeceased(fd);
     if (result?.error) { setError(result.error); setLoading(false); }
-    else if (result?.id) { router.refresh(); router.push(`/${locale}/deceased/${result.id}`); }
+    else if (result?.id) { window.location.href = `/${locale}/deceased/${result.id}`; }
   }
 
   const sectionStyle = { background: "var(--card)", border: "1px solid var(--border)", borderRadius: "1rem", boxShadow: "0 2px 10px rgba(184,134,11,0.07)" };
