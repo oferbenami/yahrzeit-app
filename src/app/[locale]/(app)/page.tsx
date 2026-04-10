@@ -32,7 +32,7 @@ export default async function HomePage({
   const { data: deceased } = await supabase
     .from("deceased")
     .select(`id, full_name, death_date_hebrew_day, death_date_hebrew_month, photo_url, relationship_label,
-      family_groups!inner(group_members!inner(user_id))`)
+      family_groups!deceased_group_id_fkey!inner(group_members!inner(user_id))`)
     .eq("family_groups.group_members.user_id", user!.id);
 
   const firstGroupId = groups?.[0]?.id;

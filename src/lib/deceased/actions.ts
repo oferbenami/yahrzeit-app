@@ -144,7 +144,7 @@ export async function searchDeceased(query: string) {
     .from("deceased")
     .select(`
       id, full_name, death_date_hebrew, relationship_label,
-      family_groups!inner(name, group_members!inner(user_id))
+      family_groups!deceased_group_id_fkey!inner(name, group_members!inner(user_id))
     `)
     .eq("family_groups.group_members.user_id", user.id)
     .ilike("full_name", `%${query.trim()}%`)

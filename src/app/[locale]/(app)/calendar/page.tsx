@@ -22,7 +22,7 @@ export default async function CalendarPage({
     .select(`
       id, full_name, death_date_hebrew_day, death_date_hebrew_month,
       death_date_hebrew, relationship_label, photo_url,
-      family_groups!inner(name, group_members!inner(user_id))
+      family_groups!deceased_group_id_fkey!inner(name, group_members!inner(user_id))
     `)
     .eq("family_groups.group_members.user_id", user!.id);
 

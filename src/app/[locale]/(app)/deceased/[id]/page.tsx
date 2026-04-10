@@ -32,7 +32,7 @@ export default async function DeceasedDetailPage({
 
   const { data: deceased } = await supabase
     .from("deceased")
-    .select(`*, family_groups(id, name)`)
+    .select(`*, family_groups!deceased_group_id_fkey(id, name)`)
     .eq("id", id)
     .single();
 
