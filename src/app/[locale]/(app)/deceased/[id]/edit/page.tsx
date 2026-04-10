@@ -180,7 +180,7 @@ export default async function EditDeceasedPage({
       <div className="mt-8 bg-destructive/5 border border-destructive/20 rounded-xl p-5" role="region" aria-label="אזור מחיקה">
         <h3 className="font-semibold text-destructive mb-2">מחיקה</h3>
         <p className="text-sm text-muted-foreground mb-3">פעולה זו אינה הפיכה</p>
-        <DeleteDeceasedButton deceasedId={id} />
+        <DeleteDeceasedButton deceasedId={id} groupId={deceased.group_id} locale={locale} />
       </div>
     </div>
   );

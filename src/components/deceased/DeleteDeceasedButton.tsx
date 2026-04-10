@@ -4,14 +4,27 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { deleteDeceased } from "@/lib/deceased/actions";
 
-export function DeleteDeceasedButton({ deceasedId }: { deceasedId: string }) {
+export function DeleteDeceasedButton({
+  deceasedId,
+  groupId,
+  locale,
+}: {
+  deceasedId: string;
+  groupId: string;
+  locale: string;
+}) {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
     setDeleting(true);
-    await deleteDeceased(deceasedId);
-    // redirect happens inside deleteDeceased
+    const result = await deleteDeceased(deceasedId);
+    if (result?.error) {
+      setDeleting(false);
+      alert(result.error);
+      return;
+    }
+    window.location.href = `/${locale}/groups/${groupId}`;
   }
 
   return (
