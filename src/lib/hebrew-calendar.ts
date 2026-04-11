@@ -94,13 +94,17 @@ export interface YahrzeitInfo {
 }
 
 /**
- * Convert Hebrew date to Gregorian
+ * Convert Hebrew date to Gregorian.
+ * Returns a Date at local noon to avoid UTC-offset date shifts when calling toISOString().
  */
 export function hebrewToGregorian(day: number, month: number, year: number): Date | null {
   try {
     const daysInMonth = HDate.daysInMonth(month, year);
     if (day < 1 || day > daysInMonth) return null;
-    return new HDate(day, month, year).greg();
+    const d = new HDate(day, month, year).greg();
+    // HDate.greg() returns midnight local time; set to noon so toISOString() (UTC) stays on the same calendar day
+    d.setHours(12, 0, 0, 0);
+    return d;
   } catch {
     return null;
   }

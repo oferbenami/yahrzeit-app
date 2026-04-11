@@ -62,7 +62,11 @@ export async function createDeceased(formData: FormData) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("deceased-photos")
       .upload(fileName, photoFile, { upsert: true });
-    if (!uploadError && uploadData) {
+    if (uploadError) {
+      console.error("[createDeceased] photo upload error:", uploadError.message);
+      return { error: `שגיאת העלאת תמונה: ${uploadError.message}` };
+    }
+    if (uploadData) {
       photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
@@ -76,7 +80,11 @@ export async function createDeceased(formData: FormData) {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("deceased-photos")
       .upload(fileName, gravestoneFile, { upsert: true });
-    if (!uploadError && uploadData) {
+    if (uploadError) {
+      console.error("[createDeceased] gravestone upload error:", uploadError.message);
+      return { error: `שגיאת העלאת תמונת מצבה: ${uploadError.message}` };
+    }
+    if (uploadData) {
       gravestonePhotoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
     }
   }

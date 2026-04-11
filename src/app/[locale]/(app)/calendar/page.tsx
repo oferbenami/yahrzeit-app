@@ -127,13 +127,15 @@ export default async function CalendarPage({
 
                       {/* Photo */}
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0 overflow-hidden"
-                        style={{ background: "linear-gradient(135deg, #c9a84c80, #8b601080)" }}
+                        className="w-12 h-12 rounded-full shrink-0 overflow-hidden flex items-center justify-center font-bold text-base text-white"
+                        style={y.photoUrl
+                          ? { border: "2px solid #c9a84c", boxShadow: "0 0 0 2px #c9a84c30" }
+                          : { background: "linear-gradient(135deg, #c9a84c, #8b6010)" }}
                       >
                         {y.photoUrl ? (
                           <img src={y.photoUrl} alt={y.fullName} className="w-full h-full object-cover" />
                         ) : (
-                          <span style={{ color: "#b8860b" }}>{y.fullName[0]}</span>
+                          y.fullName[0]
                         )}
                       </div>
 

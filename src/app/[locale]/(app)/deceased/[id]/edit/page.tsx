@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { updateDeceased } from "@/lib/deceased/actions";
 import { DeleteDeceasedButton } from "@/components/deceased/DeleteDeceasedButton";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default async function EditDeceasedPage({
   params,
@@ -27,7 +28,10 @@ export default async function EditDeceasedPage({
 
   async function updateAction(formData: FormData) {
     "use server";
-    await updateDeceased(id, formData);
+    const result = await updateDeceased(id, formData);
+    if (!result?.error) {
+      redirect(`/${locale}/deceased/${id}`);
+    }
   }
 
 
@@ -161,12 +165,11 @@ export default async function EditDeceasedPage({
         </div>
 
         <div className="flex gap-3">
-          <button
-            type="submit"
-            className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-          >
-            שמור
-          </button>
+          <SubmitButton
+            label="שמור"
+            pendingLabel="שומר..."
+            className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+          />
           <Link
             href={`/${locale}/deceased/${id}`}
             className="px-6 py-2.5 border border-border rounded-lg font-medium text-foreground hover:bg-secondary transition-colors"
