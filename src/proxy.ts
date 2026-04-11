@@ -11,7 +11,7 @@ function isPublicPath(pathname: string): boolean {
   return publicPaths.some((p) => pathname.includes(p));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Handle intl routing
