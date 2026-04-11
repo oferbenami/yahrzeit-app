@@ -237,12 +237,23 @@ export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData
   const photoFile = formData.get("photo") as File;
   if (!photoFile || photoFile.size === 0) return { error: "לא נבחרה תמונה" };
 
+  // Verify bucket exists
+  const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+  console.log("[uploadDeceasedPhoto] buckets:", buckets?.map(b => b.name), "error:", bucketsError?.message);
+  const bucketExists = buckets?.some(b => b.name === "deceased-photos");
+  if (!bucketExists) {
+    return { error: `ה-bucket "deceased-photos" לא קיים ב-Supabase. יש ליצור אותו ב-Dashboard → Storage` };
+  }
+
   const ext = photoFile.name.split(".").pop();
   const fileName = `${user.id}/${Date.now()}.${ext}`;
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from("deceased-photos")
     .upload(fileName, photoFile, { upsert: true });
-  if (uploadError || !uploadData) return { error: uploadError?.message ?? "שגיאת העלאה" };
+  if (uploadError || !uploadData) {
+    console.error("[uploadDeceasedPhoto] storage error:", JSON.stringify(uploadError));
+    return { error: `שגיאת אחסון: ${uploadError?.message} (${uploadError?.name ?? uploadError?.cause ?? "unknown"})` };
+  }
 
   const photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
 
