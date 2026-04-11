@@ -21,7 +21,7 @@ export default async function CalendarPage({
     .from("deceased")
     .select(`
       id, full_name, death_date_hebrew_day, death_date_hebrew_month,
-      death_date_hebrew, relationship_label, photo_url,
+      death_date_hebrew, death_date_gregorian, relationship_label, photo_url,
       family_groups!deceased_group_id_fkey!inner(name, group_members!inner(user_id))
     `)
     .eq("family_groups.group_members.user_id", user!.id);
@@ -32,6 +32,20 @@ export default async function CalendarPage({
     const dd = String(gd.getDate()).padStart(2, "0");
     const mm = String(gd.getMonth() + 1).padStart(2, "0");
     const yyyy = gd.getFullYear();
+
+    // Calculate years since death
+    const deathYear = d.death_date_gregorian
+      ? parseInt((d.death_date_gregorian as string).split("-")[0])
+      : null;
+    const yearsElapsed = deathYear ? yyyy - deathYear : null;
+
+    // Format shabbat eve
+    let shabbatEveFormatted: string | null = null;
+    if (next.shabbatEveBefore) {
+      const s = next.shabbatEveBefore;
+      shabbatEveFormatted = `${String(s.getDate()).padStart(2, "0")}/${String(s.getMonth() + 1).padStart(2, "0")}/${s.getFullYear()}`;
+    }
+
     return {
       id: d.id,
       fullName: d.full_name,
@@ -42,11 +56,12 @@ export default async function CalendarPage({
       gregorianDate: gd,
       gregorianFormatted: `${dd}/${mm}/${yyyy}`,
       hebrewDate: next.hebrewDate.hebrewString,
-      shabbatEve: next.shabbatEveBefore,
+      shabbatEveFormatted,
+      yearsElapsed,
     };
   }).sort((a, b) => a.daysUntil - b.daysUntil);
 
-  // Group by Hebrew month label
+  // Group by month label
   const byMonth: Record<string, typeof allYahrzeits> = {};
   for (const y of allYahrzeits) {
     const key = y.gregorianDate.toLocaleDateString("he-IL", { year: "numeric", month: "long" });
@@ -146,13 +161,17 @@ export default async function CalendarPage({
                           {y.hebrewDate}
                           {y.relationship && ` • ${y.relationship}`}
                         </p>
-                        {y.shabbatEve && (
+                        <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                          {y.gregorianFormatted}
+                          {y.yearsElapsed !== null && (
+                            <span style={{ color: "var(--primary)", fontWeight: 600 }}>
+                              {" "}• שנה {y.yearsElapsed} לפטירה
+                            </span>
+                          )}
+                        </p>
+                        {y.shabbatEveFormatted && (
                           <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                            ערב שבת:{" "}
-                            {(() => {
-                              const d = y.shabbatEve!;
-                              return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
-                            })()}
+                            ערב שבת: <span style={{ color: "var(--foreground)" }}>{y.shabbatEveFormatted}</span>
                           </p>
                         )}
                       </div>
