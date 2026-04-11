@@ -2,7 +2,43 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { gregorianToHebrew, hebrewToGregorian } from "@/lib/hebrew-calendar";
+
+const PHOTO_BUCKET = "deceased-photos";
+
+/**
+ * Ensures the deceased-photos storage bucket exists.
+ * Creates it (with public access) if missing — requires service_role key.
+ */
+async function ensureBucket(): Promise<{ error?: string }> {
+  try {
+    const admin = createAdminClient();
+    const { data: buckets, error: listError } = await admin.storage.listBuckets();
+    if (listError) {
+      console.error("[ensureBucket] listBuckets error:", listError.message);
+      return { error: listError.message };
+    }
+    if (buckets?.some((b) => b.name === PHOTO_BUCKET)) return {};
+
+    // Bucket doesn't exist — create it
+    const { error: createError } = await admin.storage.createBucket(PHOTO_BUCKET, {
+      public: true,
+      fileSizeLimit: 5 * 1024 * 1024, // 5 MB
+      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    });
+    if (createError) {
+      console.error("[ensureBucket] createBucket error:", createError.message);
+      return { error: createError.message };
+    }
+    console.log("[ensureBucket] bucket created successfully");
+    return {};
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[ensureBucket] exception:", msg);
+    return { error: msg };
+  }
+}
 
 export async function createDeceased(formData: FormData) {
   const supabase = await createClient();
@@ -53,6 +89,12 @@ export async function createDeceased(formData: FormData) {
     ? gregorianToHebrew(new Date(birthDateStr + "T12:00:00")).hebrewString
     : null;
 
+  // Ensure bucket exists before any upload
+  const bucketResult = await ensureBucket();
+  if (bucketResult.error) {
+    return { error: `שגיאת אחסון: ${bucketResult.error}` };
+  }
+
   // Handle photo upload
   let photoUrl: string | null = null;
   const photoFile = formData.get("photo") as File;
@@ -60,14 +102,14 @@ export async function createDeceased(formData: FormData) {
     const ext = photoFile.name.split(".").pop();
     const fileName = `${user.id}/${Date.now()}.${ext}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("deceased-photos")
+      .from(PHOTO_BUCKET)
       .upload(fileName, photoFile, { upsert: true });
     if (uploadError) {
       console.error("[createDeceased] photo upload error:", uploadError.message);
       return { error: `שגיאת העלאת תמונה: ${uploadError.message}` };
     }
     if (uploadData) {
-      photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
+      photoUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
 
@@ -78,14 +120,14 @@ export async function createDeceased(formData: FormData) {
     const ext = gravestoneFile.name.split(".").pop();
     const fileName = `gravestone/${user.id}/${Date.now()}.${ext}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("deceased-photos")
+      .from(PHOTO_BUCKET)
       .upload(fileName, gravestoneFile, { upsert: true });
     if (uploadError) {
       console.error("[createDeceased] gravestone upload error:", uploadError.message);
       return { error: `שגיאת העלאת תמונת מצבה: ${uploadError.message}` };
     }
     if (uploadData) {
-      gravestonePhotoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
+      gravestonePhotoUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
 
@@ -237,25 +279,23 @@ export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData
   const photoFile = formData.get("photo") as File;
   if (!photoFile || photoFile.size === 0) return { error: "לא נבחרה תמונה" };
 
-  // Verify bucket exists
-  const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-  console.log("[uploadDeceasedPhoto] buckets:", buckets?.map(b => b.name), "error:", bucketsError?.message);
-  const bucketExists = buckets?.some(b => b.name === "deceased-photos");
-  if (!bucketExists) {
-    return { error: `ה-bucket "deceased-photos" לא קיים ב-Supabase. יש ליצור אותו ב-Dashboard → Storage` };
+  // Auto-create bucket if missing
+  const bucketResult = await ensureBucket();
+  if (bucketResult.error) {
+    return { error: `שגיאת אחסון: ${bucketResult.error}` };
   }
 
   const ext = photoFile.name.split(".").pop();
   const fileName = `${user.id}/${Date.now()}.${ext}`;
   const { data: uploadData, error: uploadError } = await supabase.storage
-    .from("deceased-photos")
+    .from(PHOTO_BUCKET)
     .upload(fileName, photoFile, { upsert: true });
   if (uploadError || !uploadData) {
     console.error("[uploadDeceasedPhoto] storage error:", JSON.stringify(uploadError));
-    return { error: `שגיאת אחסון: ${uploadError?.message} (${uploadError?.name ?? uploadError?.cause ?? "unknown"})` };
+    return { error: `שגיאת אחסון: ${uploadError?.message}` };
   }
 
-  const photoUrl = supabase.storage.from("deceased-photos").getPublicUrl(uploadData.path).data.publicUrl;
+  const photoUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
 
   const { error } = await supabase
     .from("deceased")
