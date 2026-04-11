@@ -199,7 +199,7 @@ export default async function HomePage({
                   {y.fullName[0]}
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">{y.fullName}</p>
+                  <p className="font-semibold text-sm">{y.fullName} ז״ל</p>
                   <p className="text-xs" style={{ color: "#8b6a4f" }}>{y.yahrzeit.hebrewDate.hebrewString}</p>
                 </div>
               </Link>
@@ -232,7 +232,7 @@ export default async function HomePage({
                   >
                     {y.fullName[0]}
                   </div>
-                  <span className="font-medium text-sm">{y.fullName}</span>
+                  <span className="font-medium text-sm">{y.fullName} ז״ל</span>
                 </div>
                 <div className="text-end">
                   <p className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
@@ -260,7 +260,7 @@ export default async function HomePage({
                 className="flex items-center justify-between px-3 py-2 rounded-lg transition-all hover:opacity-80"
                 style={{ background: "var(--muted)" }}
               >
-                <span className="text-sm font-medium">{y.fullName}</span>
+                <span className="text-sm font-medium">{y.fullName} ז״ל</span>
                 <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                   {y.yahrzeit.gregorianDate.toLocaleDateString("he-IL", { month: "long", day: "numeric" })}
                 </p>

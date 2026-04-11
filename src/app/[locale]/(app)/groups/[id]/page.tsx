@@ -154,7 +154,7 @@ export default async function GroupDetailPage({
                   ) : d.full_name[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{d.full_name}</p>
+                  <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{d.full_name} ז״ל</p>
                   <p className="text-xs truncate" style={{ color: "var(--muted-foreground)" }}>
                     {d.relationship_label && `${d.relationship_label} • `}
                     {d.death_date_hebrew}

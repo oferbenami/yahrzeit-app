@@ -185,7 +185,7 @@ function DeceasedRow({
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate" style={{ color: "var(--foreground)" }}>
-          {d.full_name}
+          {d.full_name} ז״ל
         </p>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           {d.relationship_label && (

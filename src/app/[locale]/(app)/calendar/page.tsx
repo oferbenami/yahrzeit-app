@@ -141,7 +141,7 @@ export default async function CalendarPage({
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate" style={{ color: "var(--foreground)" }}>{y.fullName}</p>
+                        <p className="font-semibold text-sm truncate" style={{ color: "var(--foreground)" }}>{y.fullName} ז״ל</p>
                         <p className="text-xs truncate" style={{ color: "var(--muted-foreground)" }}>
                           {y.hebrewDate}
                           {y.relationship && ` • ${y.relationship}`}

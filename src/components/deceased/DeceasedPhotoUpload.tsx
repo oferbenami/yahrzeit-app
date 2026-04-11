@@ -64,7 +64,7 @@ export function DeceasedPhotoUpload({ deceasedId, currentPhotoUrl, deceasedName 
 
         {/* Name + upload trigger */}
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold truncate">{deceasedName}</h2>
+          <h2 className="text-xl font-bold truncate">{deceasedName} ז״ל</h2>
           <PhotoPicker
             name="photo_upload"
             onFile={handleFile}

@@ -76,7 +76,7 @@ export default async function DeceasedDetailPage({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <h1 className="text-xl font-bold flex-1 truncate" style={{ color: "var(--foreground)" }}>{deceased.full_name}</h1>
+        <h1 className="text-xl font-bold flex-1 truncate" style={{ color: "var(--foreground)" }}>{deceased.full_name} ז״ל</h1>
         <Link
           href={`/${locale}/deceased/${id}/edit`}
           className="p-2 rounded-xl transition-colors"
