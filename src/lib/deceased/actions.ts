@@ -89,11 +89,12 @@ export async function createDeceased(formData: FormData) {
     ? gregorianToHebrew(new Date(birthDateStr + "T12:00:00")).hebrewString
     : null;
 
-  // Ensure bucket exists before any upload
+  // Ensure bucket exists, then upload via admin client (bypasses RLS)
   const bucketResult = await ensureBucket();
   if (bucketResult.error) {
     return { error: `שגיאת אחסון: ${bucketResult.error}` };
   }
+  const admin = createAdminClient();
 
   // Handle photo upload
   let photoUrl: string | null = null;
@@ -101,7 +102,7 @@ export async function createDeceased(formData: FormData) {
   if (photoFile && photoFile.size > 0) {
     const ext = photoFile.name.split(".").pop();
     const fileName = `${user.id}/${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await admin.storage
       .from(PHOTO_BUCKET)
       .upload(fileName, photoFile, { upsert: true });
     if (uploadError) {
@@ -109,7 +110,7 @@ export async function createDeceased(formData: FormData) {
       return { error: `שגיאת העלאת תמונה: ${uploadError.message}` };
     }
     if (uploadData) {
-      photoUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
+      photoUrl = admin.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
 
@@ -119,7 +120,7 @@ export async function createDeceased(formData: FormData) {
   if (gravestoneFile && gravestoneFile.size > 0) {
     const ext = gravestoneFile.name.split(".").pop();
     const fileName = `gravestone/${user.id}/${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await admin.storage
       .from(PHOTO_BUCKET)
       .upload(fileName, gravestoneFile, { upsert: true });
     if (uploadError) {
@@ -127,7 +128,7 @@ export async function createDeceased(formData: FormData) {
       return { error: `שגיאת העלאת תמונת מצבה: ${uploadError.message}` };
     }
     if (uploadData) {
-      gravestonePhotoUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
+      gravestonePhotoUrl = admin.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
     }
   }
 
@@ -279,15 +280,16 @@ export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData
   const photoFile = formData.get("photo") as File;
   if (!photoFile || photoFile.size === 0) return { error: "לא נבחרה תמונה" };
 
-  // Auto-create bucket if missing
+  // Auto-create bucket if missing, then upload via admin client (bypasses RLS)
   const bucketResult = await ensureBucket();
   if (bucketResult.error) {
     return { error: `שגיאת אחסון: ${bucketResult.error}` };
   }
 
+  const admin = createAdminClient();
   const ext = photoFile.name.split(".").pop();
   const fileName = `${user.id}/${Date.now()}.${ext}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { data: uploadData, error: uploadError } = await admin.storage
     .from(PHOTO_BUCKET)
     .upload(fileName, photoFile, { upsert: true });
   if (uploadError || !uploadData) {
@@ -295,7 +297,7 @@ export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData
     return { error: `שגיאת אחסון: ${uploadError?.message}` };
   }
 
-  const photoUrl = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
+  const photoUrl = admin.storage.from(PHOTO_BUCKET).getPublicUrl(uploadData.path).data.publicUrl;
 
   const { error } = await supabase
     .from("deceased")
