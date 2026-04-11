@@ -114,6 +114,7 @@ export function buildYahrzeitICalEvents(
     id: string;
     full_name: string;
     death_date_hebrew: string;
+    death_date_gregorian?: string | null;
     relationship_label?: string | null;
     cemetery_name?: string | null;
   },
@@ -123,15 +124,28 @@ export function buildYahrzeitICalEvents(
   }>,
   appUrl = "https://yahrzeit.app"
 ): ICalEvent[] {
-  return yahrzeitDates.map(({ gregorianDate, hebrewDate }, i) => {
+  const deathYear = deceased.death_date_gregorian
+    ? parseInt((deceased.death_date_gregorian as string).split("-")[0])
+    : null;
+
+  return yahrzeitDates.map(({ gregorianDate, hebrewDate }) => {
     const date = new Date(gregorianDate);
+    const yearsElapsed = deathYear ? date.getFullYear() - deathYear : null;
+
     const relPart = deceased.relationship_label
       ? ` (${deceased.relationship_label})`
       : "";
+    const yearPart = yearsElapsed !== null ? ` • שנה ${yearsElapsed} לפטירה` : "";
+
+    const kaddishNote =
+      yearsElapsed === 1
+        ? "\n\n* שנת האבל הראשונה — קדיש נאמר 11 חודשים מיום הפטירה בלבד"
+        : "";
+
     return {
       uid: `yahrzeit-${deceased.id}-${date.getFullYear()}@yahrzeit.app`,
-      summary: `אזכרה - ${deceased.full_name}${relPart}`,
-      description: `${hebrewDate}\nלזכר נשמת ${deceased.full_name}`,
+      summary: `אזכרה — ${deceased.full_name} ז״ל${relPart}${yearPart}`,
+      description: `${hebrewDate}\nלזכר נשמת ${deceased.full_name} ז״ל${kaddishNote}`,
       dtstart: date,
       allDay: true,
       location: deceased.cemetery_name || undefined,

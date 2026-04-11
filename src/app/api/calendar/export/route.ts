@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const { data } = await supabase
       .from("deceased")
       .select(
-        "id, full_name, death_date_hebrew, death_date_hebrew_day, death_date_hebrew_month, relationship_label, cemetery_name"
+        "id, full_name, death_date_hebrew, death_date_hebrew_day, death_date_hebrew_month, death_date_gregorian, relationship_label, cemetery_name"
       )
       .eq("id", deceasedId)
       .single();
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .from("deceased")
       .select(
         `id, full_name, death_date_hebrew, death_date_hebrew_day, death_date_hebrew_month,
-         relationship_label, cemetery_name,
+         death_date_gregorian, relationship_label, cemetery_name,
          family_groups!deceased_group_id_fkey!inner(group_members!inner(user_id))`
       )
       .eq("family_groups.group_members.user_id", user.id);

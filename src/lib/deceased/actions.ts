@@ -7,6 +7,14 @@ import { gregorianToHebrew, hebrewToGregorian } from "@/lib/hebrew-calendar";
 
 const PHOTO_BUCKET = "deceased-photos";
 
+/** Extract the storage path from a Supabase public URL. */
+function extractStoragePath(url: string, bucket: string): string | null {
+  const marker = `/object/public/${bucket}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return url.slice(idx + marker.length).split("?")[0];
+}
+
 /**
  * Ensures the deceased-photos storage bucket exists.
  * Creates it (with public access) if missing — requires service_role key.
@@ -231,23 +239,49 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "לא מחובר" };
 
-  const deathDateStr = formData.get("death_date_gregorian") as string;
   let hebrewDeathData = {};
+  const dateMode = (formData.get("date_mode") as string) || "gregorian";
 
-  if (deathDateStr) {
-    const hebrewDeath = gregorianToHebrew(new Date(deathDateStr + "T12:00:00"));
-    hebrewDeathData = {
-      death_date_gregorian: deathDateStr,
-      death_date_hebrew: hebrewDeath.hebrewString,
-      death_date_hebrew_day: hebrewDeath.day,
-      death_date_hebrew_month: hebrewDeath.month,
-    };
+  if (dateMode === "hebrew") {
+    const heDay = parseInt(formData.get("death_hebrew_day") as string);
+    const heMonth = parseInt(formData.get("death_hebrew_month") as string);
+    const heYear = parseInt(formData.get("death_hebrew_year") as string);
+    if (heDay && heMonth && heYear) {
+      const gDate = hebrewToGregorian(heDay, heMonth, heYear);
+      if (gDate) {
+        const gregorianStr = gDate.toISOString().split("T")[0];
+        const hebrewInfo = gregorianToHebrew(gDate);
+        hebrewDeathData = {
+          death_date_gregorian: gregorianStr,
+          death_date_hebrew: hebrewInfo.hebrewString,
+          death_date_hebrew_day: heDay,
+          death_date_hebrew_month: heMonth,
+        };
+      }
+    }
+  } else {
+    const deathDateStr = formData.get("death_date_gregorian") as string;
+    if (deathDateStr) {
+      const afterSunset = formData.get("death_after_sunset") === "true";
+      const dateForHebrew = new Date(deathDateStr + "T12:00:00");
+      if (afterSunset) dateForHebrew.setDate(dateForHebrew.getDate() + 1);
+      const hebrewDeath = gregorianToHebrew(dateForHebrew);
+      hebrewDeathData = {
+        death_date_gregorian: deathDateStr,
+        death_date_hebrew: hebrewDeath.hebrewString,
+        death_date_hebrew_day: hebrewDeath.day,
+        death_date_hebrew_month: hebrewDeath.month,
+      };
+    }
   }
 
   const birthDateStr = formData.get("birth_date_gregorian") as string;
   const birthDateHebrew = birthDateStr
     ? gregorianToHebrew(new Date(birthDateStr + "T12:00:00")).hebrewString
     : null;
+
+  const latRaw = formData.get("cemetery_lat") as string;
+  const lngRaw = formData.get("cemetery_lng") as string;
 
   const { error } = await supabase
     .from("deceased")
@@ -260,6 +294,8 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
       cemetery_block: (formData.get("cemetery_block") as string) || null,
       cemetery_plot: (formData.get("cemetery_plot") as string) || null,
       cemetery_notes: (formData.get("cemetery_notes") as string) || null,
+      cemetery_lat: latRaw ? parseFloat(latRaw) : null,
+      cemetery_lng: lngRaw ? parseFloat(lngRaw) : null,
       relationship_label: (formData.get("relationship_label") as string) || null,
       relationship_degree: (formData.get("relationship_degree") as string) || null,
       notes: (formData.get("notes") as string) || null,
@@ -279,6 +315,14 @@ export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData
 
   const photoFile = formData.get("photo") as File;
   if (!photoFile || photoFile.size === 0) return { error: "לא נבחרה תמונה" };
+
+  // Read old photo URL before overwriting (for deletion after upload)
+  const { data: existing } = await supabase
+    .from("deceased")
+    .select("photo_url")
+    .eq("id", deceasedId)
+    .single();
+  const oldPhotoUrl = existing?.photo_url as string | null;
 
   // Auto-create bucket if missing, then upload via admin client (bypasses RLS)
   const bucketResult = await ensureBucket();
@@ -305,6 +349,14 @@ export async function uploadDeceasedPhoto(deceasedId: string, formData: FormData
     .eq("id", deceasedId);
 
   if (error) return { error: error.message };
+
+  // Delete old photo from storage (best-effort — don't fail the request on error)
+  if (oldPhotoUrl) {
+    const oldPath = extractStoragePath(oldPhotoUrl, PHOTO_BUCKET);
+    if (oldPath) {
+      await admin.storage.from(PHOTO_BUCKET).remove([oldPath]);
+    }
+  }
 
   revalidatePath(`/[locale]/(app)/deceased/${deceasedId}`, "page");
   return { photoUrl };
