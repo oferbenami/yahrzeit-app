@@ -14,19 +14,26 @@ export function DeceasedPhotoUpload({ deceasedId, currentPhotoUrl, deceasedName 
   const [preview, setPreview] = useState<string | null>(currentPhotoUrl ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const fileRef = useRef<File | null>(null);
 
   async function handleFile(file: File) {
     fileRef.current = file;
     setPreview(URL.createObjectURL(file));
     setError(null);
+    setSaved(false);
     setLoading(true);
 
     const fd = new FormData();
     fd.append("photo", file);
     const result = await uploadDeceasedPhoto(deceasedId, fd);
 
-    if (result?.error) setError(result.error);
+    if (result?.error) {
+      setError(result.error);
+      setPreview(currentPhotoUrl ?? null); // revert preview on failure
+    } else {
+      setSaved(true);
+    }
     setLoading(false);
   }
 
@@ -69,8 +76,8 @@ export function DeceasedPhotoUpload({ deceasedId, currentPhotoUrl, deceasedName 
       {error && (
         <p className="text-xs text-red-600" role="alert">{error}</p>
       )}
-      {!loading && preview && preview !== currentPhotoUrl && (
-        <p className="text-xs" style={{ color: "#6b9e6b" }}>התמונה נשמרה בהצלחה</p>
+      {saved && !error && (
+        <p className="text-xs font-medium" style={{ color: "#6b9e6b" }}>התמונה נשמרה בהצלחה ✓</p>
       )}
     </div>
   );
