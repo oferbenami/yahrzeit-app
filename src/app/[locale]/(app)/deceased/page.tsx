@@ -21,7 +21,7 @@ export default async function DeceasedPage({
   const groupMap = new Map(
     (memberships ?? []).map((m) => [
       m.group_id,
-      (m.family_groups as { id: string; name: string } | null),
+      (m.family_groups as unknown as { id: string; name: string } | null),
     ])
   );
 
