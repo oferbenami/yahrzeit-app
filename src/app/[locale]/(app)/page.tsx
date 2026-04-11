@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getUpcomingYahrzeits } from "@/lib/hebrew-calendar";
 import { gregorianToHebrew } from "@/lib/hebrew-calendar";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { LogoutButton } from "@/components/ui/LogoutButton";
 
 function CandleIcon() {
   return (
@@ -93,18 +94,21 @@ export default async function HomePage({
               {hebrewToday.hebrewString}
             </p>
           </div>
-          {firstGroupId && (
-            <Link
-              href={`/${locale}/deceased/new?group=${firstGroupId}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-all"
-              style={{ background: "linear-gradient(135deg, #c9a84c 0%, #8b6010 100%)", boxShadow: "0 3px 10px rgba(184,134,11,0.3)" }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-              </svg>
-              הוסף נפטר
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            {firstGroupId && (
+              <Link
+                href={`/${locale}/deceased/new?group=${firstGroupId}`}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-all"
+                style={{ background: "linear-gradient(135deg, #c9a84c 0%, #8b6010 100%)", boxShadow: "0 3px 10px rgba(184,134,11,0.3)" }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                </svg>
+                הוסף נפטר
+              </Link>
+            )}
+            <LogoutButton locale={locale} />
+          </div>
         </div>
         <div className="h-px mt-4" style={{ background: "linear-gradient(to right, transparent, #c9a84c40, transparent)" }} />
       </div>
@@ -114,6 +118,7 @@ export default async function HomePage({
         <StatCard
           title="קבוצות משפחה"
           value={groups?.length || 0}
+          href={`/${locale}/groups`}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -125,6 +130,7 @@ export default async function HomePage({
         <StatCard
           title="נפטרים רשומים"
           value={deceased?.length || 0}
+          href={`/${locale}/deceased`}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -136,6 +142,7 @@ export default async function HomePage({
         <StatCard
           title="אזכרה ב-30 יום"
           value={upcoming30.length}
+          href={`/${locale}/calendar`}
           subtitle={upcoming30.filter((y) => y.daysUntil <= 7).length > 0
             ? `${upcoming30.filter((y) => y.daysUntil <= 7).length} השבוע`
             : undefined}
@@ -150,6 +157,7 @@ export default async function HomePage({
         <StatCard
           title="תזכורות פעילות"
           value={activeReminders}
+          href={`/${locale}/profile`}
           subtitle={upcomingGatherings > 0 ? `${upcomingGatherings} כינוסים` : undefined}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -285,28 +293,15 @@ export default async function HomePage({
           </div>
           <p className="text-lg font-bold mb-1" style={{ color: "var(--foreground)" }}>אין אזכרה קרובה</p>
           <p className="text-sm mb-6" style={{ color: "var(--muted-foreground)" }}>הוסף נפטרים כדי לעקוב אחרי אזכרות</p>
-          <div className="flex flex-col items-center gap-3">
-            {firstGroupId ? (
-              <Link
-                href={`/${locale}/deceased/new?group=${firstGroupId}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all"
-                style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)", boxShadow: "0 4px 14px rgba(184,134,11,0.35)" }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                </svg>
-                הוסף נפטר
-              </Link>
-            ) : (
-              <Link
-                href={`/${locale}/groups`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all"
-                style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)", boxShadow: "0 4px 14px rgba(184,134,11,0.35)" }}
-              >
-                צור קבוצה משפחתית
-              </Link>
-            )}
-          </div>
+          {!firstGroupId && (
+            <Link
+              href={`/${locale}/groups`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all"
+              style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)", boxShadow: "0 4px 14px rgba(184,134,11,0.35)" }}
+            >
+              צור קבוצה משפחתית
+            </Link>
+          )}
         </div>
       )}
     </div>
