@@ -79,6 +79,34 @@ export const HEBREW_MONTHS = [
   { value: 6,  label: "אלול" },
 ];
 
+/** Hebrew month names without niqqud, keyed by hebcal English name */
+const MONTH_NAME_MAP: Record<string, string> = {
+  "Nisan":   "ניסן",
+  "Iyyar":   "אייר",
+  "Sivan":   "סיון",
+  "Tamuz":   "תמוז",
+  "Av":      "אב",
+  "Elul":    "אלול",
+  "Tishrei": "תשרי",
+  "Cheshvan":"חשוון",
+  "Kislev":  "כסלו",
+  "Tevet":   "טבת",
+  "Shevat":  "שבט",
+  "Adar I":  "אדר א׳",
+  "Adar II": "אדר ב׳",
+  "Adar":    "אדר",
+};
+
+/**
+ * Build a formatted Hebrew date string with gematria day, clean month name, gematria year.
+ * e.g. day=4, month=12 (Adar I), year=5771 → "ד׳ אדר א׳ תשע״א"
+ */
+export function buildHebrewDateString(day: number, month: number, year: number): string {
+  const hDate = new HDate(day, month, year);
+  const monthNameHe = MONTH_NAME_MAP[hDate.getMonthName()] ?? hDate.getMonthName();
+  return `${numberToHebrewLetters(day)} ${monthNameHe} ${yearToHebrewLetters(year)}`;
+}
+
 export interface HebrewDateInfo {
   day: number;
   month: number;
@@ -122,12 +150,15 @@ export function getHebrewDaysInMonth(month: number, year: number): number {
  */
 export function gregorianToHebrew(date: Date): HebrewDateInfo {
   const hDate = new HDate(date);
+  const day   = hDate.getDate();
+  const month = hDate.getMonth();
+  const year  = hDate.getFullYear();
   return {
-    day: hDate.getDate(),
-    month: hDate.getMonth(),
-    year: hDate.getFullYear(),
+    day,
+    month,
+    year,
     monthName: hDate.getMonthName(),
-    hebrewString: hDate.render("he"),
+    hebrewString: buildHebrewDateString(day, month, year),
   };
 }
 
@@ -186,14 +217,17 @@ export function calculateYahrzeit(
     shabbatEveBefore.setDate(shabbatEveBefore.getDate() - 2);
   }
 
+  const yDay   = yahrzeitHDate.getDate();
+  const yMonth = yahrzeitHDate.getMonth();
+  const yYear  = yahrzeitHDate.getFullYear();
   return {
     gregorianDate,
     hebrewDate: {
-      day: yahrzeitHDate.getDate(),
-      month: yahrzeitHDate.getMonth(),
-      year: yahrzeitHDate.getFullYear(),
+      day: yDay,
+      month: yMonth,
+      year: yYear,
       monthName: yahrzeitHDate.getMonthName(),
-      hebrewString: yahrzeitHDate.render("he"),
+      hebrewString: buildHebrewDateString(yDay, yMonth, yYear),
     },
     shabbatEveBefore,
   };
