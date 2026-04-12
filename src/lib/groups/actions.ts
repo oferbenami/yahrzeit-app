@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function createGroup(formData: FormData) {
   const supabase = await createClient();
@@ -159,6 +160,35 @@ export async function addDeceasedToGroup(deceasedId: string, groupId: string) {
 
   revalidatePath(`/[locale]/(app)/groups/${groupId}`, "page");
   return { success: true };
+}
+
+export async function deleteGroup(groupId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "לא מחובר" };
+
+  // Verify admin via admin client (bypasses recursive RLS)
+  const admin = createAdminClient();
+  const { data: membership } = await admin
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!membership || membership.role !== "admin") {
+    return { error: "אין הרשאה למחוק קבוצה" };
+  }
+
+  const { error } = await admin
+    .from("family_groups")
+    .delete()
+    .eq("id", groupId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/he/groups");
+  redirect("/he/groups");
 }
 
 export async function regenerateInviteCode(groupId: string) {

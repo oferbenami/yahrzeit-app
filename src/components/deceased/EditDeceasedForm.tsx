@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { updateDeceased } from "@/lib/deceased/actions";
 import {
   gregorianToHebrew,
@@ -19,8 +18,10 @@ import { DeleteDeceasedButton } from "./DeleteDeceasedButton";
 interface DeceasedData {
   id: string;
   full_name: string;
-  relationship_label?: string | null;
-  relationship_degree?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  father_name?: string | null;
+  mother_name?: string | null;
   death_date_gregorian?: string | null;
   death_date_hebrew_day?: number | null;
   death_date_hebrew_month?: number | null;
@@ -40,10 +41,16 @@ interface Props {
   deceased: DeceasedData;
   locale: string;
   id: string;
+  groups: { id: string; name: string }[];
 }
 
 const inputClass =
-  "w-full px-3 py-2.5 border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 text-sm transition-colors";
+  "w-full px-3 py-2.5 border rounded-xl focus:outline-none text-sm transition-colors";
+const iStyle = {
+  borderColor: "var(--border)",
+  background: "var(--muted)",
+  color: "var(--foreground)",
+} as const;
 
 const cardStyle = {
   background: "var(--card)",
@@ -51,12 +58,6 @@ const cardStyle = {
   borderRadius: "1rem",
   boxShadow: "0 2px 10px rgba(184,134,11,0.07)",
 };
-
-const relationships = [
-  "אב", "אם", "סב", "סבה", "בעל", "אישה",
-  "אח", "אחות", "בן", "בת", "דוד", "דודה",
-  "חם", "חמה", "גיס", "גיסה", "אחר",
-];
 
 function initHebrewFromGregorian(gregorianStr: string | null | undefined) {
   if (!gregorianStr) {
@@ -70,11 +71,16 @@ function initHebrewFromGregorian(gregorianStr: string | null | undefined) {
   }
 }
 
-export function EditDeceasedForm({ deceased, locale, id }: Props) {
+export function EditDeceasedForm({ deceased, locale, id, groups }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Name fields — prefer stored split names, fall back to parsing full_name
+  const parts = deceased.full_name.split(" ");
+  const [firstName, setFirstName] = useState(deceased.first_name ?? parts[0] ?? "");
+  const [lastName, setLastName] = useState(deceased.last_name ?? parts.slice(1).join(" ") ?? "");
 
   // Death date mode
   const [dateMode, setDateMode] = useState<"gregorian" | "hebrew">("gregorian");
@@ -90,43 +96,32 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
   );
   const [hebrewYear, setHebrewYear] = useState(initHe.year);
 
-  // Conversion previews
   const [gregorianToHebrewPreview, setGregorianToHebrewPreview] = useState("");
   const [hebrewToGregorianPreview, setHebrewToGregorianPreview] = useState("");
 
   useEffect(() => {
-    if (dateMode !== "gregorian" || !gregorianDate) {
-      setGregorianToHebrewPreview("");
-      return;
-    }
+    if (dateMode !== "gregorian" || !gregorianDate) { setGregorianToHebrewPreview(""); return; }
     try {
       const d = new Date(gregorianDate + "T12:00:00");
       if (afterSunset) d.setDate(d.getDate() + 1);
-      const h = gregorianToHebrew(d);
-      setGregorianToHebrewPreview(h.hebrewString);
-    } catch {
-      setGregorianToHebrewPreview("");
-    }
+      setGregorianToHebrewPreview(gregorianToHebrew(d).hebrewString);
+    } catch { setGregorianToHebrewPreview(""); }
   }, [gregorianDate, afterSunset, dateMode]);
 
   useEffect(() => {
     if (dateMode !== "hebrew" || !hebrewDay || !hebrewMonth || !hebrewYear) {
-      setHebrewToGregorianPreview("");
-      return;
+      setHebrewToGregorianPreview(""); return;
     }
     try {
       const g = hebrewToGregorian(parseInt(hebrewDay), parseInt(hebrewMonth), parseInt(hebrewYear));
       if (g) {
         const dd = String(g.getDate()).padStart(2, "0");
         const mm = String(g.getMonth() + 1).padStart(2, "0");
-        const yyyy = g.getFullYear();
-        setHebrewToGregorianPreview(`${dd}/${mm}/${yyyy}`);
+        setHebrewToGregorianPreview(`${dd}/${mm}/${g.getFullYear()}`);
       } else {
         setHebrewToGregorianPreview("תאריך לא תקין");
       }
-    } catch {
-      setHebrewToGregorianPreview("");
-    }
+    } catch { setHebrewToGregorianPreview(""); }
   }, [hebrewDay, hebrewMonth, hebrewYear, dateMode]);
 
   const hebrewDaysInMonth =
@@ -141,6 +136,8 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
+    formData.set("first_name", firstName.trim());
+    formData.set("last_name", lastName.trim());
     startTransition(async () => {
       const result = await updateDeceased(id, formData);
       if (result?.error) {
@@ -159,9 +156,8 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
         <div
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 shadow-lg"
           style={{
-            background: "linear-gradient(135deg, #fff8e8, #fef3d0)",
-            color: "#b8860b",
-            border: "1px solid #c9a84c60",
+            background: "linear-gradient(135deg, #86efac, #4ade80)",
+            color: "#14532d",
             whiteSpace: "nowrap",
           }}
         >
@@ -172,9 +168,9 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* Photo */}
-        <div className="p-5" style={cardStyle}>
+        <div className="p-4" style={cardStyle}>
           <DeceasedPhotoUpload
             deceasedId={id}
             currentPhotoUrl={deceased.photo_url}
@@ -183,69 +179,78 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
         </div>
 
         {/* Basic info */}
-        <div className="p-5 space-y-4" style={cardStyle}>
+        <div className="p-4 space-y-3" style={cardStyle}>
           <h2 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>פרטים בסיסיים</h2>
 
-          <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
-              שם מלא *
-            </label>
-            <input
-              name="full_name"
-              type="text"
-              required
-              defaultValue={deceased.full_name}
-              className={inputClass}
-              style={{ borderColor: "var(--border)" }}
-            />
+          {/* First + Last name */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
+                שם פרטי *
+              </label>
+              <input
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={inputClass}
+                style={iStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
+                שם משפחה
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={inputClass}
+                style={iStyle}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
-              קשר משפחתי
-            </label>
-            <select
-              name="relationship_label"
-              defaultValue={deceased.relationship_label || ""}
-              className={inputClass}
-              style={{ borderColor: "var(--border)" }}
-            >
-              <option value="">-- בחר --</option>
-              {relationships.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+          {/* Father + Mother name */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
+                שם האב
+              </label>
+              <input
+                name="father_name"
+                type="text"
+                defaultValue={deceased.father_name || ""}
+                className={inputClass}
+                style={iStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
+                שם האם
+              </label>
+              <input
+                name="mother_name"
+                type="text"
+                defaultValue={deceased.mother_name || ""}
+                className={inputClass}
+                style={iStyle}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
-              דרגת קרבה
-            </label>
-            <select
-              name="relationship_degree"
-              defaultValue={deceased.relationship_degree || ""}
-              className={inputClass}
-              style={{ borderColor: "var(--border)" }}
-            >
-              <option value="">-- בחר --</option>
-              <option value="first">ראשונה</option>
-              <option value="second">שנייה</option>
-              <option value="extended">מורחבת</option>
-            </select>
-          </div>
         </div>
 
         {/* Dates */}
-        <div className="p-5 space-y-4" style={cardStyle}>
+        <div className="p-4 space-y-3" style={cardStyle}>
           <h2 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>תאריכים</h2>
 
-          {/* Death date with mode toggle */}
+          {/* Death date */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold" style={{ color: "var(--muted-foreground)" }}>
                 תאריך פטירה *
               </label>
-              {/* Mode toggle */}
               <div
                 className="flex rounded-xl overflow-hidden text-xs font-bold"
                 style={{ border: "1px solid var(--border)" }}
@@ -259,9 +264,7 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                       ? { background: "linear-gradient(135deg, #c9a84c, #8b6010)", color: "white" }
                       : { background: "var(--muted)", color: "var(--muted-foreground)" }
                   }
-                >
-                  לועזי
-                </button>
+                >לועזי</button>
                 <button
                   type="button"
                   onClick={() => setDateMode("hebrew")}
@@ -271,16 +274,14 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                       ? { background: "linear-gradient(135deg, #c9a84c, #8b6010)", color: "white" }
                       : { background: "var(--muted)", color: "var(--muted-foreground)" }
                   }
-                >
-                  עברי
-                </button>
+                >עברי</button>
               </div>
             </div>
 
             <input type="hidden" name="date_mode" value={dateMode} />
 
             {dateMode === "gregorian" ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <input
                   name="death_date_gregorian"
                   type="date"
@@ -288,10 +289,10 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                   value={gregorianDate}
                   onChange={(e) => setGregorianDate(e.target.value)}
                   className={inputClass + " text-center"}
-                  style={{ borderColor: "var(--border)", direction: "ltr" }}
+                  style={{ ...iStyle, direction: "ltr" }}
                 />
                 {gregorianToHebrewPreview && (
-                  <p className="text-xs text-center font-medium" style={{ color: "var(--primary)" }}>
+                  <p className="text-xs text-center font-medium" style={{ color: "#c9a84c" }}>
                     {gregorianToHebrewPreview}
                   </p>
                 )}
@@ -304,22 +305,21 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                   />
                   <input type="hidden" name="death_after_sunset" value={afterSunset ? "true" : "false"} />
                   <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                    נפטר/ה אחרי שקיעה (תאריך עברי מתקדם ביום)
+                    נפטר/ה אחרי שקיעה
                   </span>
                 </label>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="grid grid-cols-3 gap-2">
-                  {/* Day */}
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
                   <div>
                     <label className="block text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>יום</label>
                     <select
                       name="death_hebrew_day"
                       value={hebrewDay}
                       onChange={(e) => setHebrewDay(e.target.value)}
-                      className={inputClass + " text-center"}
-                      style={{ borderColor: "var(--border)" }}
+                      className={inputClass + " text-center px-1"}
+                      style={iStyle}
                       required
                     >
                       <option value="">--</option>
@@ -328,15 +328,14 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                       ))}
                     </select>
                   </div>
-                  {/* Month */}
                   <div>
                     <label className="block text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>חודש</label>
                     <select
                       name="death_hebrew_month"
                       value={hebrewMonth}
                       onChange={(e) => setHebrewMonth(e.target.value)}
-                      className={inputClass}
-                      style={{ borderColor: "var(--border)" }}
+                      className={inputClass + " px-1"}
+                      style={iStyle}
                       required
                     >
                       {HEBREW_MONTHS.map((m) => (
@@ -344,15 +343,14 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                       ))}
                     </select>
                   </div>
-                  {/* Year */}
                   <div>
                     <label className="block text-xs mb-1" style={{ color: "var(--muted-foreground)" }}>שנה</label>
                     <select
                       name="death_hebrew_year"
                       value={hebrewYear}
                       onChange={(e) => setHebrewYear(e.target.value)}
-                      className={inputClass + " text-center"}
-                      style={{ borderColor: "var(--border)" }}
+                      className={inputClass + " text-center px-1"}
+                      style={iStyle}
                       required
                     >
                       {hebrewYearOptions.map((y) => (
@@ -364,12 +362,10 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
                 {hebrewToGregorianPreview && (
                   <p
                     className="text-xs text-center font-medium"
-                    style={{
-                      color: hebrewToGregorianPreview === "תאריך לא תקין"
-                        ? "#dc2626"
-                        : "var(--primary)",
-                    }}
                     dir="ltr"
+                    style={{
+                      color: hebrewToGregorianPreview === "תאריך לא תקין" ? "#dc2626" : "#c9a84c",
+                    }}
                   >
                     {hebrewToGregorianPreview}
                   </p>
@@ -378,9 +374,9 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
             )}
           </div>
 
-          {/* Birth date — Gregorian only */}
+          {/* Birth date */}
           <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
               תאריך לידה
             </label>
             <input
@@ -388,17 +384,17 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
               type="date"
               defaultValue={deceased.birth_date_gregorian || ""}
               className={inputClass + " text-center"}
-              style={{ borderColor: "var(--border)", direction: "ltr" }}
+              style={{ ...iStyle, direction: "ltr" }}
             />
           </div>
         </div>
 
         {/* Cemetery */}
-        <div className="p-5 space-y-4" style={cardStyle}>
+        <div className="p-4 space-y-3" style={cardStyle}>
           <h2 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>בית קברות</h2>
 
           <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
               שם בית קברות
             </label>
             <input
@@ -406,46 +402,25 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
               type="text"
               defaultValue={deceased.cemetery_name || ""}
               className={inputClass}
-              style={{ borderColor: "var(--border)" }}
+              style={iStyle}
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
-                חלקה
-              </label>
-              <input
-                name="cemetery_block"
-                type="text"
-                defaultValue={deceased.cemetery_block || ""}
-                className={inputClass + " text-center"}
-                style={{ borderColor: "var(--border)" }}
-              />
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>חלקה</label>
+              <input name="cemetery_block" type="text" defaultValue={deceased.cemetery_block || ""}
+                className={inputClass + " text-center px-1"} style={iStyle} />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
-                שורה
-              </label>
-              <input
-                name="cemetery_plot"
-                type="text"
-                defaultValue={deceased.cemetery_plot || ""}
-                className={inputClass + " text-center"}
-                style={{ borderColor: "var(--border)" }}
-              />
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>שורה</label>
+              <input name="cemetery_plot" type="text" defaultValue={deceased.cemetery_plot || ""}
+                className={inputClass + " text-center px-1"} style={iStyle} />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
-                מספר קבר
-              </label>
-              <input
-                name="cemetery_notes"
-                type="text"
-                defaultValue={deceased.cemetery_notes || ""}
-                className={inputClass + " text-center"}
-                style={{ borderColor: "var(--border)" }}
-              />
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>קבר</label>
+              <input name="cemetery_notes" type="text" defaultValue={deceased.cemetery_notes || ""}
+                className={inputClass + " text-center px-1"} style={iStyle} />
             </div>
           </div>
 
@@ -455,17 +430,36 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
           />
         </div>
 
+        {/* Group assignment */}
+        {groups.length > 0 && (
+          <div className="p-4" style={cardStyle}>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--foreground)" }}>
+              שיוך לקבוצה
+            </label>
+            <select
+              name="group_id"
+              defaultValue={deceased.group_id || ""}
+              className={inputClass}
+              style={iStyle}
+            >
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Notes */}
-        <div className="p-5" style={cardStyle}>
-          <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted-foreground)" }}>
+        <div className="p-4" style={cardStyle}>
+          <label className="block text-xs font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
             הערות
           </label>
           <textarea
             name="notes"
-            rows={3}
+            rows={2}
             defaultValue={deceased.notes || ""}
             className={inputClass + " resize-none"}
-            style={{ borderColor: "var(--border)" }}
+            style={iStyle}
           />
         </div>
 
@@ -473,12 +467,12 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
           <p className="text-sm text-center" style={{ color: "#dc2626" }}>{error}</p>
         )}
 
-        {/* Action buttons */}
-        <div className="flex gap-3">
+        {/* Action buttons — equal width, no overflow */}
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="submit"
             disabled={isPending || saved}
-            className="flex-1 py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 disabled:opacity-60"
+            className="py-3 rounded-xl font-bold text-white text-sm transition-all active:scale-95 disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #c9a84c 0%, #8b6010 100%)",
               boxShadow: "0 3px 10px rgba(184,134,11,0.3)",
@@ -486,9 +480,10 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
           >
             {isPending ? "שומר..." : "שמור"}
           </button>
-          <Link
-            href={`/${locale}/deceased/${id}`}
-            className="px-6 py-3 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center"
+          <button
+            type="button"
+            onClick={() => router.push(`/${locale}/deceased/${id}`)}
+            className="py-3 rounded-xl font-bold text-sm transition-all active:scale-95"
             style={{
               border: "1px solid var(--border)",
               color: "var(--foreground)",
@@ -496,13 +491,13 @@ export function EditDeceasedForm({ deceased, locale, id }: Props) {
             }}
           >
             ביטול
-          </Link>
+          </button>
         </div>
       </form>
 
       {/* Danger zone */}
       <div
-        className="mt-6 p-5 rounded-2xl"
+        className="mt-4 p-4 rounded-2xl"
         style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}
       >
         <h3 className="font-bold text-sm mb-1" style={{ color: "#dc2626" }}>מחיקה</h3>

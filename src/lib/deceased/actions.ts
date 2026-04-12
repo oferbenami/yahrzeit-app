@@ -239,6 +239,12 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "לא מחובר" };
 
+  // Build full_name from first/last
+  const firstNameVal = (formData.get("first_name") as string)?.trim() || "";
+  const lastNameVal = (formData.get("last_name") as string)?.trim() || "";
+  const fullNameVal = [firstNameVal, lastNameVal].filter(Boolean).join(" ");
+  if (!fullNameVal) return { error: "שם הוא שדה חובה" };
+
   let hebrewDeathData = {};
   const dateMode = (formData.get("date_mode") as string) || "gregorian";
 
@@ -282,11 +288,19 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
 
   const latRaw = formData.get("cemetery_lat") as string;
   const lngRaw = formData.get("cemetery_lng") as string;
+  const newGroupId = (formData.get("group_id") as string) || null;
+
+  const relationshipLabel = (formData.get("relationship_label") as string) || null;
+  const relationshipDegree = (formData.get("relationship_degree") as string) || null;
 
   const { error } = await supabase
     .from("deceased")
     .update({
-      full_name: (formData.get("full_name") as string).trim(),
+      full_name: fullNameVal,
+      first_name: firstNameVal || null,
+      last_name: lastNameVal || null,
+      father_name: (formData.get("father_name") as string) || null,
+      mother_name: (formData.get("mother_name") as string) || null,
       birth_date_gregorian: birthDateStr || null,
       birth_date_hebrew: birthDateHebrew,
       ...hebrewDeathData,
@@ -296,15 +310,27 @@ export async function updateDeceased(deceasedId: string, formData: FormData) {
       cemetery_notes: (formData.get("cemetery_notes") as string) || null,
       cemetery_lat: latRaw ? parseFloat(latRaw) : null,
       cemetery_lng: lngRaw ? parseFloat(lngRaw) : null,
-      relationship_label: (formData.get("relationship_label") as string) || null,
-      relationship_degree: (formData.get("relationship_degree") as string) || null,
+      ...(newGroupId ? { group_id: newGroupId } : {}),
+      relationship_label: relationshipLabel,
+      relationship_degree: relationshipDegree,
       notes: (formData.get("notes") as string) || null,
     })
     .eq("id", deceasedId);
 
   if (error) return { error: error.message };
 
+  // Keep user_deceased_relationships in sync
+  if (relationshipLabel) {
+    await supabase.from("user_deceased_relationships").upsert({
+      user_id: user.id,
+      deceased_id: deceasedId,
+      relationship_label: relationshipLabel,
+      relationship_degree: (relationshipDegree as "first" | "second" | "extended") || null,
+    }, { onConflict: "user_id,deceased_id" });
+  }
+
   revalidatePath(`/[locale]/(app)/deceased/${deceasedId}`, "page");
+  revalidatePath("/[locale]/(app)/groups", "page");
   return { id: deceasedId };
 }
 

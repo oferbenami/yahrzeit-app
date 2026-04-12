@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { logout } from "@/lib/auth/actions";
+import { NusachPicker } from "@/components/profile/NusachPicker";
 
 const cardStyle = {
   background: "var(--card)",
@@ -14,7 +14,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("*")
+    .select("full_name, phone, created_at, prayer_nusach")
     .eq("id", user!.id)
     .single();
 
@@ -52,6 +52,17 @@ export default async function ProfilePage() {
         </div>
       </div>
 
+      {/* Prayer nusach preference */}
+      <div className="p-5 mb-4" style={cardStyle}>
+        <h2 className="font-bold text-sm mb-1" style={{ color: "var(--foreground)" }}>העדפות תפילה</h2>
+        <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
+          בחר את הנוסח שיוצג כברירת מחדל בדף התפילות
+        </p>
+        <NusachPicker
+          current={(profile?.prayer_nusach as "sephardi" | "mizrahi" | "ashkenaz") ?? "sephardi"}
+        />
+      </div>
+
       {/* Notifications / calendar export */}
       <div className="p-5 mb-4" style={cardStyle}>
         <h2 className="font-bold text-sm mb-3" style={{ color: "var(--foreground)" }}>התראות ולוח שנה</h2>
@@ -61,7 +72,7 @@ export default async function ProfilePage() {
         <a
           href="/api/calendar/export"
           download
-          className="inline-link flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all w-fit border"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all w-full border"
           style={{ borderColor: "var(--border)", color: "var(--foreground)", background: "var(--secondary)" }}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,29 +97,6 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      {/* Logout — prominent, at bottom */}
-      <div className="p-5" style={{ ...cardStyle, border: "1px solid #fca5a580" }}>
-        <h2 className="font-bold text-sm mb-1" style={{ color: "var(--foreground)" }}>יציאה מהאפליקציה</h2>
-        <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
-          ניתן להתחבר שנית בכל עת עם אותו חשבון
-        </p>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="w-full py-3.5 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2"
-            style={{
-              background: "linear-gradient(135deg, #ef4444, #dc2626)",
-              boxShadow: "0 4px 14px rgba(239,68,68,0.25)",
-            }}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            התנתק מהאפליקציה
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

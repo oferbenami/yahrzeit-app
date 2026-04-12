@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getNextYahrzeit, formatGregorianDate } from "@/lib/hebrew-calendar";
 import { CalendarExportButtons } from "@/components/deceased/CalendarExportButtons";
 import { DeceasedPhotoUpload } from "@/components/deceased/DeceasedPhotoUpload";
+import { MyRelationshipCard } from "@/components/deceased/MyRelationshipCard";
 
 const cardStyle = {
   background: "var(--card)",
@@ -29,14 +31,30 @@ export default async function DeceasedDetailPage({
 }) {
   const { locale, id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: deceased } = await supabase
-    .from("deceased")
-    .select(`*, family_groups!deceased_group_id_fkey(id, name)`)
-    .eq("id", id)
-    .single();
+  const admin = createAdminClient();
+
+  const [{ data: deceased }, { data: userRelationship }] = await Promise.all([
+    supabase
+      .from("deceased")
+      .select(`*, family_groups!deceased_group_id_fkey(id, name)`)
+      .eq("id", id)
+      .single(),
+    user
+      ? admin
+          .from("user_deceased_relationships")
+          .select("relationship_label, relationship_degree")
+          .eq("deceased_id", id)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   if (!deceased) notFound();
+
+  const myLabel = userRelationship?.relationship_label ?? null;
+  const myDegree = userRelationship?.relationship_degree ?? null;
 
   const nextYahrzeit = getNextYahrzeit(
     deceased.death_date_hebrew_day,
@@ -96,19 +114,22 @@ export default async function DeceasedDetailPage({
           currentPhotoUrl={deceased.photo_url}
           deceasedName={deceased.full_name}
         />
-        {(deceased.relationship_label || deceased.family_groups) && (
-          <div className="mt-3 pt-3 flex items-center gap-3 flex-wrap" style={{ borderTop: "1px solid var(--border)" }}>
-            {deceased.relationship_label && (
-              <span className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: "linear-gradient(135deg, #fff8e8, #fef3d0)", color: "#b8860b", border: "1px solid #c9a84c50" }}>
-                {deceased.relationship_label}
-              </span>
-            )}
-            {deceased.family_groups && (
-              <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{deceased.family_groups.name}</span>
-            )}
+        {deceased.family_groups && (
+          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{deceased.family_groups.name}</span>
           </div>
         )}
       </div>
+
+      {/* My relationship to this person */}
+      {user && (
+        <MyRelationshipCard
+          deceasedId={id}
+          deceasedName={deceased.full_name}
+          initialLabel={myLabel}
+          initialDegree={myDegree}
+        />
+      )}
 
       {/* Yahrzeit card */}
       <div
@@ -152,7 +173,7 @@ export default async function DeceasedDetailPage({
           yahrzeitDate={nextYahrzeit.gregorianDate}
           hebrewDate={nextYahrzeit.hebrewDate.hebrewString}
           cemeteryName={deceased.cemetery_name}
-          relationship={deceased.relationship_label}
+          relationship={myLabel}
         />
         <div className="mt-3 flex flex-wrap gap-3">
           <Link

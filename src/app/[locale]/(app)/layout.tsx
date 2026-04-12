@@ -18,7 +18,7 @@ export default async function AppLayout({
 
   return (
     <div
-      className="flex min-h-dvh w-full overflow-x-hidden"
+      className="flex min-h-dvh w-full"
       style={{ background: "var(--background)" }}
     >
       <AppNav locale={locale} />
@@ -27,7 +27,7 @@ export default async function AppLayout({
         id="main-content"
         tabIndex={-1}
         className="flex-1 min-w-0 overflow-x-hidden p-4 md:p-8 md:pb-8 outline-none"
-        style={{ paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}
       >
         {children}
       </main>

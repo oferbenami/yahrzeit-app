@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InviteCodeCard } from "@/components/groups/InviteCodeCard";
 import { GroupPhotoUpload } from "@/components/groups/GroupPhotoUpload";
+import { DeleteGroupButton } from "@/components/groups/DeleteGroupButton";
 
 const cardStyle = {
   background: "var(--card)",
@@ -168,6 +169,13 @@ export default async function GroupDetailPage({
           </div>
         )}
       </div>
+
+      {/* Delete group — admin only */}
+      {isAdmin && (
+        <div className="mb-4">
+          <DeleteGroupButton groupId={id} groupName={group.name} />
+        </div>
+      )}
 
       {/* Members list */}
       <div style={cardStyle}>

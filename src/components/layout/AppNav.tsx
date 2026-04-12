@@ -164,6 +164,8 @@ export function AppNav({ locale }: { locale: string }) {
           borderColor: "#e0caa0",
           backdropFilter: "blur(12px)",
           paddingBottom: "env(safe-area-inset-bottom)",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
         aria-label="ניווט תחתון"
       >

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { EditDeceasedForm } from "@/components/deceased/EditDeceasedForm";
 
 export default async function EditDeceasedPage({
@@ -10,19 +10,24 @@ export default async function EditDeceasedPage({
 }) {
   const { locale, id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: deceased } = await supabase
     .from("deceased")
-    .select("*")
+    .select("id, full_name, first_name, last_name, father_name, mother_name, relationship_label, relationship_degree, death_date_gregorian, death_date_hebrew_day, death_date_hebrew_month, birth_date_gregorian, cemetery_name, cemetery_block, cemetery_plot, cemetery_notes, cemetery_lat, cemetery_lng, photo_url, notes, group_id")
     .eq("id", id)
     .single();
 
   if (!deceased) notFound();
 
+  const { data: groups } = await supabase
+    .from("family_groups")
+    .select("id, name, group_members!inner(role)")
+    .eq("group_members.user_id", user!.id);
+
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-4">
         <Link
           href={`/${locale}/deceased/${id}`}
           className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
@@ -36,7 +41,12 @@ export default async function EditDeceasedPage({
         </h1>
       </div>
 
-      <EditDeceasedForm deceased={deceased} locale={locale} id={id} />
+      <EditDeceasedForm
+        deceased={deceased}
+        locale={locale}
+        id={id}
+        groups={groups?.map((g) => ({ id: g.id, name: g.name })) ?? []}
+      />
     </div>
   );
 }

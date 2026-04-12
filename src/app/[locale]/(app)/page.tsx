@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { getUpcomingYahrzeits } from "@/lib/hebrew-calendar";
 import { gregorianToHebrew } from "@/lib/hebrew-calendar";
@@ -21,7 +22,15 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   const supabase = await createClient();
+  const admin = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Get the group IDs this user belongs to (admin bypasses recursive RLS)
+  const { data: userMemberships } = await admin
+    .from("group_members")
+    .select("group_id")
+    .eq("user_id", user!.id);
+  const userGroupIds = (userMemberships ?? []).map((m) => m.group_id);
 
   const [
     { data: userProfile },
@@ -32,19 +41,18 @@ export default async function HomePage({
   ] = await Promise.all([
     supabase.from("users").select("full_name").eq("id", user!.id).single(),
 
-    supabase
-      .from("family_groups")
-      .select("id, name, group_members!inner(user_id)")
-      .eq("group_members.user_id", user!.id),
+    // Use admin to bypass recursive group_members RLS
+    userGroupIds.length > 0
+      ? admin.from("family_groups").select("id, name").in("id", userGroupIds)
+      : Promise.resolve({ data: [] }),
 
-    supabase
-      .from("deceased")
-      .select(`
-        id, full_name, death_date_hebrew_day, death_date_hebrew_month,
-        death_date_hebrew, photo_url, relationship_label, relationship_degree,
-        family_groups!deceased_group_id_fkey!inner(group_members!inner(user_id))
-      `)
-      .eq("family_groups.group_members.user_id", user!.id),
+    // Use admin to bypass deceased → group_members recursion
+    userGroupIds.length > 0
+      ? admin
+          .from("deceased")
+          .select("id, full_name, death_date_hebrew_day, death_date_hebrew_month, death_date_hebrew, photo_url, relationship_label, relationship_degree")
+          .in("group_id", userGroupIds)
+      : Promise.resolve({ data: [] }),
 
     supabase
       .from("reminder_schedule")
@@ -58,6 +66,11 @@ export default async function HomePage({
   ]);
 
   const firstGroupId = groups?.[0]?.id;
+  // If user has exactly 1 group, link directly to it; otherwise go to the list
+  const groupsHref =
+    groups?.length === 1
+      ? `/${locale}/groups/${firstGroupId}`
+      : `/${locale}/groups`;
   const upcomingYahrzeits = getUpcomingYahrzeits(deceased || [], 60);
   const todayYahrzeits = upcomingYahrzeits.filter((y) => y.daysUntil === 0);
   const thisWeek = upcomingYahrzeits.filter((y) => y.daysUntil > 0 && y.daysUntil <= 7);
@@ -118,7 +131,7 @@ export default async function HomePage({
         <StatCard
           title="קבוצות משפחה"
           value={groups?.length || 0}
-          href={`/${locale}/groups`}
+          href={groupsHref}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
