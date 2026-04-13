@@ -14,7 +14,10 @@ const heebo = Heebo({
   display: "swap",
 });
 
+const APP_URL = "https://yzcor-reminder-community-app.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_URL),
   title: {
     default: "יזכור - לזכרם לעד",
     template: "%s | יזכור",
@@ -29,6 +32,28 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   other: {
     "mobile-web-app-capable": "yes",
+  },
+  openGraph: {
+    title: "יזכור — אזכרות וזיכרון משפחתי",
+    description: "ניהול אזכרות, ימי זיכרון, תפילות וקברי משפחה — הכל במקום אחד",
+    url: APP_URL,
+    siteName: "יזכור",
+    images: [
+      {
+        url: `${APP_URL}/open.png`,
+        width: 1536,
+        height: 2752,
+        alt: "יזכור — אזכרות וזיכרון משפחתי",
+      },
+    ],
+    locale: "he_IL",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "יזכור — אזכרות וזיכרון משפחתי",
+    description: "ניהול אזכרות, ימי זיכרון, תפילות וקברי משפחה",
+    images: [`${APP_URL}/open.png`],
   },
 };
 
