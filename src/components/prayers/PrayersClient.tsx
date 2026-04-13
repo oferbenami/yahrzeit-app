@@ -204,6 +204,13 @@ const IGERET_RAMBAN = `שְׁמַע בְּנִי מוּסַר אָבִיךָ, ו
 
 תִּקְרָא הָאִגֶּרֶת הַזֹּאת פַּעַם אַחַת בַּשָּׁבוּעַ וְלֹא תִפְחוֹת, לְקַיְּמָהּ וְלָלֶכֶת בָּהּ תָּמִיד אַחַר הַשֵּׁם יִתְבָּרַךְ, לְמַעַן תַּצְלִיחַ בְּכָל דְּרָכֶיךָ וְתִזְכֶּה לָעוֹלָם הַבָּא הַצָּפוּן לַצַּדִּיקִים. וּבְכָל יוֹם שֶׁתִּקְרָאֶנָּה יַעֲנוּךָ מִן הַשָּׁמַיִם כַּאֲשֶׁר יַעֲלֶה עַל לִבְּךָ לִשְׁאוֹל עַד עוֹלָם אָמֵן סֶלָה.`;
 
+const MISHNA_CHANANYA = `רַבִּי חֲנַנְיָא בֶּן עֲקַשְׁיָא אוֹמֵר:
+
+רָצָה הַקָּדוֹשׁ בָּרוּךְ הוּא לְזַכּוֹת אֶת יִשְׂרָאֵל,
+לְפִיכָךְ הִרְבָּה לָהֶם תּוֹרָה וּמִצְוֹת,
+שֶׁנֶּאֱמַר (ישעיהו מב, כא): "ה׳ חָפֵץ לְמַעַן צִדְקוֹ,
+יַגְדִּיל תּוֹרָה וְיַאְדִּיר":`;
+
 // ─── Prayer definitions per nusach ───────────────────────────────────────────
 
 interface PrayerSection {
@@ -301,6 +308,7 @@ function getPrayers(nusach: Nusach): PrayerSection[] {
     { id: "psalm-124", title: "תהלים פרק קכד", subtitle: "שִׁיר הַמַּעֲלוֹת לְדָוִד",       text: PSALM_124, group: "psalms" },
     { id: "psalm-130", title: "תהלים פרק קל",  subtitle: "מִמַּעֲמַקִּים קְרָאתִיךָ",        text: PSALM_130, group: "psalms" },
     { id: "igeret-ramban", title: "אגרת הרמב\"ן", subtitle: "שְׁמַע בְּנִי מוּסַר אָבִיךָ", text: IGERET_RAMBAN },
+    { id: "mishna-chananya", title: "משנה — רבי חנניה בן עקשיא", subtitle: "רָצָה הַקָּדוֹשׁ בָּרוּךְ הוּא לְזַכּוֹת אֶת יִשְׂרָאֵל", text: MISHNA_CHANANYA },
   );
 
   return prayers;
@@ -585,6 +593,57 @@ export function PrayersClient({ defaultNusach, locale }: Props) {
             <p className="text-xs mt-0.5" style={{ color: "#b8860b" }}>יזכור ואבלות</p>
           </div>
         </Link>
+      </div>
+
+      {/* Daily Halacha study — 2 boxes in a row */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <a
+          href="https://netsor.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:opacity-90"
+          style={{
+            background: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
+            border: "1px solid #86efac50",
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, #16a34a, #15803d)" }}
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-xs" style={{ color: "#15803d" }}>נְצוֹר לְשׁוֹנְךָ</p>
+            <p className="text-xs mt-0.5" style={{ color: "#16a34a" }}>לימוד הלכות יומי</p>
+          </div>
+        </a>
+
+        <a
+          href="https://2halachot.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all hover:opacity-90"
+          style={{
+            background: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
+            border: "1px solid #86efac50",
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, #16a34a, #15803d)" }}
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-xs" style={{ color: "#15803d" }}>2 הלכות ביום</p>
+            <p className="text-xs mt-0.5" style={{ color: "#16a34a" }}>לימוד הלכות יומי</p>
+          </div>
+        </a>
       </div>
 
       {/* External prayers link */}
