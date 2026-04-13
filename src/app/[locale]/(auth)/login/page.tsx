@@ -2,6 +2,7 @@
 
 import { useState, useId } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { loginWithEmail, loginWithGoogle, sendOtp, verifyOtp } from "@/lib/auth/actions";
@@ -13,6 +14,8 @@ type LoginMode = "password" | "otp" | "otp-verify";
 
 export default function LoginPage() {
   const t = useTranslations();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || "/he";
   const [mode, setMode] = useState<LoginMode>("password");
 
   const today = new Date();
@@ -33,7 +36,9 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const result = await loginWithEmail(new FormData(e.currentTarget));
+    const fd = new FormData(e.currentTarget);
+    fd.set("next", nextUrl);
+    const result = await loginWithEmail(fd);
     if (result?.error) setError(result.error);
     setLoading(false);
   }
@@ -55,6 +60,7 @@ export default function LoginPage() {
     setError(null);
     const fd = new FormData(e.currentTarget);
     fd.append("email", otpEmail);
+    fd.set("next", nextUrl);
     const result = await verifyOtp(fd);
     if (result?.error) setError(result.error);
     setLoading(false);
@@ -211,7 +217,7 @@ export default function LoginPage() {
 
           {/* Google Login */}
           <button
-            onClick={() => loginWithGoogle()}
+            onClick={() => loginWithGoogle("he", nextUrl)}
             className="w-full py-2.5 border border-[#e0caa0] rounded-xl font-medium text-[#3a2a1e] hover:bg-[#f5e9d4] transition-colors flex items-center justify-center gap-3 bg-white/70"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">

@@ -133,9 +133,12 @@ export function HolidaysClient({ items }: { items: HolidayItem[] }) {
                 </div>
                 <div className="text-left shrink-0">
                   <p className="text-xs font-bold" style={{ color: colors.text }}>
+                    {["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][new Date(h.gregorianTimestamp).getDay()]}
+                  </p>
+                  <p className="text-xs" style={{ color: colors.text, opacity: 0.8 }}>
                     {h.gregorianDate}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: colors.text, opacity: 0.75 }}>
+                  <p className="text-xs mt-0.5" style={{ color: colors.text, opacity: 0.65 }}>
                     {h.hebrewDate}
                   </p>
                   {daysUntil >= 0 && daysUntil <= 30 && (

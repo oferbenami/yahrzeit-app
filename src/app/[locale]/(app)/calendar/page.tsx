@@ -65,6 +65,16 @@ export default async function CalendarPage({
           shabbatEveFormatted = `${String(s.getDate()).padStart(2, "0")}/${String(s.getMonth() + 1).padStart(2, "0")}/${s.getFullYear()}`;
         }
 
+        const HE_DAYS = ["יום ראשון", "יום שני", "יום שלישי", "יום רביעי", "יום חמישי", "יום שישי", "שבת"];
+        const dayOfWeekHe = HE_DAYS[gd.getDay()];
+        const isSaturday = gd.getDay() === 6;
+        let sundayFormattedIfShabbat: string | null = null;
+        if (isSaturday) {
+          const sun = new Date(gd);
+          sun.setDate(sun.getDate() + 1);
+          sundayFormattedIfShabbat = `${String(sun.getDate()).padStart(2, "0")}/${String(sun.getMonth() + 1).padStart(2, "0")}/${sun.getFullYear()}`;
+        }
+
         return {
           id: d.id,
           fullName: d.full_name,
@@ -83,6 +93,9 @@ export default async function CalendarPage({
           yearsElapsed,
           isToday: next.daysUntil === 0,
           isSoon: next.daysUntil <= 7,
+          dayOfWeekHe,
+          isSaturday,
+          sundayFormattedIfShabbat,
         };
       } catch {
         return null;
@@ -96,6 +109,7 @@ export default async function CalendarPage({
       gregorianMonthLabel: string; gregorianFormatted: string; hebrewDate: string;
       shabbatEveFormatted: string | null; yearsElapsed: number | null;
       isToday: boolean; isSoon: boolean;
+      dayOfWeekHe: string; isSaturday: boolean; sundayFormattedIfShabbat: string | null;
     }>[];
 
   const groupsForFilter = (groups ?? []).map((g) => ({ id: g.id, name: g.name as string }));

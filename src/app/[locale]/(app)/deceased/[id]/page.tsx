@@ -6,6 +6,7 @@ import { getNextYahrzeit, formatGregorianDate } from "@/lib/hebrew-calendar";
 import { CalendarExportButtons } from "@/components/deceased/CalendarExportButtons";
 import { DeceasedPhotoUpload } from "@/components/deceased/DeceasedPhotoUpload";
 import { MyRelationshipCard } from "@/components/deceased/MyRelationshipCard";
+import { DeceasedGroupsCard } from "@/components/deceased/DeceasedGroupsCard";
 
 const cardStyle = {
   background: "var(--card)",
@@ -35,7 +36,12 @@ export default async function DeceasedDetailPage({
 
   const admin = createAdminClient();
 
-  const [{ data: deceased }, { data: userRelationship }] = await Promise.all([
+  const [
+    { data: deceased },
+    { data: userRelationship },
+    { data: userMemberships },
+    { data: deceasedGroupLinks },
+  ] = await Promise.all([
     supabase
       .from("deceased")
       .select(`*, family_groups!deceased_group_id_fkey(id, name)`)
@@ -49,12 +55,36 @@ export default async function DeceasedDetailPage({
           .eq("user_id", user.id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    user
+      ? admin
+          .from("group_members")
+          .select("group_id, family_groups(id, name)")
+          .eq("user_id", user.id)
+      : Promise.resolve({ data: [] }),
+    admin
+      .from("deceased_groups")
+      .select("group_id")
+      .eq("deceased_id", id),
   ]);
 
   if (!deceased) notFound();
 
   const myLabel = userRelationship?.relationship_label ?? null;
   const myDegree = userRelationship?.relationship_degree ?? null;
+
+  // Build group items for DeceasedGroupsCard
+  const linkedGroupIds = new Set([
+    deceased?.group_id,
+    ...((deceasedGroupLinks ?? []).map((l: { group_id: string }) => l.group_id)),
+  ].filter(Boolean));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groupItems = (userMemberships ?? []).map((m: any) => ({
+    id: m.group_id as string,
+    name: (Array.isArray(m.family_groups) ? m.family_groups[0]?.name : m.family_groups?.name) ?? m.group_id,
+    linked: linkedGroupIds.has(m.group_id),
+    isPrimary: m.group_id === deceased?.group_id,
+  }));
 
   const nextYahrzeit = getNextYahrzeit(
     deceased.death_date_hebrew_day,
@@ -129,6 +159,11 @@ export default async function DeceasedDetailPage({
           initialLabel={myLabel}
           initialDegree={myDegree}
         />
+      )}
+
+      {/* Group memberships */}
+      {user && groupItems.length > 1 && (
+        <DeceasedGroupsCard deceasedId={id} groups={groupItems} />
       )}
 
       {/* Yahrzeit card */}

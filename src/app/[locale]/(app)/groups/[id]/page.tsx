@@ -39,6 +39,12 @@ export default async function GroupDetailPage({
 
   const isAdmin = myMembership.role === "admin";
 
+  const adminMember = group.group_members?.find(
+    (m: { role: string; users?: { email: string; full_name?: string } }) => m.role === "admin"
+  );
+  const adminEmail = adminMember?.users?.email as string | undefined;
+  const adminName = adminMember?.users?.full_name as string | undefined;
+
   type DeceasedRow = { id: string; full_name: string; death_date_hebrew: string; relationship_label?: string; photo_url?: string };
 
   // Primary: query deceased by group_id (original / main group)
@@ -90,49 +96,41 @@ export default async function GroupDetailPage({
         <h1 className="text-xl font-bold flex-1 truncate" style={{ color: "var(--foreground)" }}>{group.name}</h1>
       </div>
 
-      {/* Group profile card */}
-      <div className="p-5 mb-4" style={cardStyle}>
-        <GroupPhotoUpload
-          groupId={id}
-          groupName={group.name}
-          currentPhotoUrl={group.photo_url}
-        />
-        {/* Stats */}
-        <div className="flex gap-4 mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-          <div className="flex-1 text-center rounded-xl py-3" style={{ background: "var(--muted)" }}>
-            <p className="text-2xl font-bold" style={{ color: "var(--primary)" }}>{deceasedCount}</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>נפטרים</p>
-          </div>
-          <div className="flex-1 text-center rounded-xl py-3" style={{ background: "var(--muted)" }}>
-            <p className="text-2xl font-bold" style={{ color: "var(--primary)" }}>{memberCount}</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>חברים</p>
+      {/* Group profile card — compact */}
+      <div className="p-4 mb-3" style={cardStyle}>
+        <div className="flex items-center gap-4">
+          <GroupPhotoUpload
+            groupId={id}
+            groupName={group.name}
+            currentPhotoUrl={group.photo_url}
+          />
+          {/* Inline stats */}
+          <div className="flex gap-3 flex-1">
+            <div className="flex-1 text-center rounded-xl py-2" style={{ background: "var(--muted)" }}>
+              <p className="text-xl font-bold" style={{ color: "var(--primary)" }}>{deceasedCount}</p>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>נפטרים</p>
+            </div>
+            <div className="flex-1 text-center rounded-xl py-2" style={{ background: "var(--muted)" }}>
+              <p className="text-xl font-bold" style={{ color: "var(--primary)" }}>{memberCount}</p>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>חברים</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Invite code */}
       {isAdmin && (
-        <div className="mb-4">
+        <div className="mb-3">
           <InviteCodeCard groupId={id} inviteCode={group.invite_code} groupName={group.name} />
         </div>
       )}
 
       {/* Deceased list */}
-      <div className="mb-5" style={cardStyle}>
-        <div className="flex items-center justify-between p-4 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="mb-3" style={cardStyle}>
+        <div className="p-4 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <h2 className="font-bold text-sm" style={{ color: "var(--foreground)" }}>
             נפטרים ({deceasedCount})
           </h2>
-          <Link
-            href={`/${locale}/deceased/new?group=${id}`}
-            className="inline-link flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg text-white"
-            style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)" }}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-            הוסף נפטר
-          </Link>
         </div>
 
         {mergedDeceased.length === 0 ? (
@@ -219,6 +217,27 @@ export default async function GroupDetailPage({
           ))}
         </div>
       </div>
+
+      {/* Contact admin — shown to non-admins only */}
+      {!isAdmin && adminEmail && (
+        <div className="mt-4">
+          <a
+            href={`mailto:${adminEmail}?subject=${encodeURIComponent(`פנייה בנוגע לקבוצה: ${group.name}`)}`}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all"
+            style={{
+              background: "var(--muted)",
+              color: "var(--foreground)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            שלח מייל למנהל{adminName ? ` (${adminName})` : ""}
+          </a>
+        </div>
+      )}
     </div>
   );
 }

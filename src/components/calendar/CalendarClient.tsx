@@ -50,6 +50,9 @@ export interface YahrzeitItem {
   yearsElapsed: number | null;
   isToday: boolean;
   isSoon: boolean;
+  dayOfWeekHe: string;        // e.g. "יום שלישי"
+  isSaturday: boolean;        // true if yahrzeit falls on Shabbat
+  sundayFormattedIfShabbat: string | null; // DD/MM/YYYY of the Sunday when deferred
 }
 
 export interface GroupOption {
@@ -315,14 +318,19 @@ export function CalendarClient({
                         {y.relationship && ` • ${y.relationship}`}
                       </p>
                       <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                        {y.gregorianFormatted}
+                        {y.dayOfWeekHe} • {y.gregorianFormatted}
                         {y.yearsElapsed !== null && (
                           <span style={{ color: "var(--primary)", fontWeight: 600 }}>
                             {" "}• שנה {y.yearsElapsed}
                           </span>
                         )}
                       </p>
-                      {y.shabbatEveFormatted && (
+                      {y.isSaturday && y.sundayFormattedIfShabbat && (
+                        <p className="text-xs font-semibold" style={{ color: "#b45309" }}>
+                          ⚠ חל בשבת — נדחה ליום ראשון {y.sundayFormattedIfShabbat}
+                        </p>
+                      )}
+                      {y.shabbatEveFormatted && !y.isSaturday && (
                         <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                           ערב שב׳: <span style={{ color: "var(--foreground)" }}>{y.shabbatEveFormatted}</span>
                         </p>

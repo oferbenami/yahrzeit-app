@@ -162,6 +162,24 @@ export async function addDeceasedToGroup(deceasedId: string, groupId: string) {
   return { success: true };
 }
 
+export async function removeDeceasedFromGroup(deceasedId: string, groupId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "לא מחובר" };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("deceased_groups")
+    .delete()
+    .eq("deceased_id", deceasedId)
+    .eq("group_id", groupId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/[locale]/(app)/groups/${groupId}`, "page");
+  return { success: true };
+}
+
 export async function deleteGroup(groupId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

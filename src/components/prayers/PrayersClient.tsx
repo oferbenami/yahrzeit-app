@@ -212,6 +212,7 @@ interface PrayerSection {
   subtitle: string;
   text?: string;
   images?: string[];
+  group?: string; // items with the same group render together in a row/grid
 }
 
 function getPrayers(nusach: Nusach): PrayerSection[] {
@@ -236,14 +237,16 @@ function getPrayers(nusach: Nusach): PrayerSection[] {
       {
         id: "el-maleh-ish",
         title: "אל מלא רחמים לגבר",
-        subtitle: "החלף [שם הנפטר] ו[שם אמו] בשמות הנכונים",
+        subtitle: "החלף [שם הנפטר] ו[שם אמו]",
         text: EL_MALEH_ISH,
+        group: "el-maleh",
       },
       {
         id: "el-maleh-isha",
         title: "אל מלא רחמים לאשה",
-        subtitle: "החלף [שם הנפטרת] ו[שם אמה] בשמות הנכונים",
+        subtitle: "החלף [שם הנפטרת] ו[שם אמה]",
         text: EL_MALEH_ISHA,
+        group: "el-maleh",
       }
     );
   } else {
@@ -251,14 +254,16 @@ function getPrayers(nusach: Nusach): PrayerSection[] {
       {
         id: "hashkava-ish",
         title: "אשכבה לגבר",
-        subtitle: "החלף [שם הנפטר] ו[שם האב] בשמות הנכונים",
+        subtitle: "החלף [שם הנפטר] ו[שם האב]",
         text: HASHKAVA_ISH,
+        group: "hashkava",
       },
       {
         id: "hashkava-isha",
         title: "אשכבה לאשה",
-        subtitle: "החלף [שם הנפטרת] ו[שם האב] בשמות הנכונים",
+        subtitle: "החלף [שם הנפטרת] ו[שם האב]",
         text: HASHKAVA_ISHA,
+        group: "hashkava",
       }
     );
   }
@@ -275,24 +280,26 @@ function getPrayers(nusach: Nusach): PrayerSection[] {
       {
         id: "sick-man",
         title: "תפילה לרפואת איש",
-        subtitle: "נוסח עדות המזרח — החלף בשם החולה",
+        subtitle: "החלף בשם החולה",
         images: ["/prayers/sick-man-1.jpeg", "/prayers/sick-man-2.jpeg"],
+        group: "refua",
       },
       {
         id: "sick-woman",
         title: "תפילה לרפואת אשה",
-        subtitle: "נוסח עדות המזרח — החלף בשם החולה",
+        subtitle: "החלף בשם החולה",
         images: ["/prayers/sick-woman.jpeg"],
+        group: "refua",
       }
     );
   }
 
   // Psalms — all nusach
   prayers.push(
-    { id: "psalm-91",  title: "תהלים פרק צא",  subtitle: "יֹשֵׁב בְּסֵתֶר עֶלְיוֹן",       text: PSALM_91 },
-    { id: "psalm-121", title: "תהלים פרק קכא", subtitle: "שִׁיר לַמַּעֲלוֹת — אֶשָּׂא עֵינַי", text: PSALM_121 },
-    { id: "psalm-124", title: "תהלים פרק קכד", subtitle: "שִׁיר הַמַּעֲלוֹת לְדָוִד",       text: PSALM_124 },
-    { id: "psalm-130", title: "תהלים פרק קל",  subtitle: "מִמַּעֲמַקִּים קְרָאתִיךָ",        text: PSALM_130 },
+    { id: "psalm-91",  title: "תהלים פרק צא",  subtitle: "יֹשֵׁב בְּסֵתֶר עֶלְיוֹן",       text: PSALM_91,  group: "psalms" },
+    { id: "psalm-121", title: "תהלים פרק קכא", subtitle: "שִׁיר לַמַּעֲלוֹת — אֶשָּׂא עֵינַי", text: PSALM_121, group: "psalms" },
+    { id: "psalm-124", title: "תהלים פרק קכד", subtitle: "שִׁיר הַמַּעֲלוֹת לְדָוִד",       text: PSALM_124, group: "psalms" },
+    { id: "psalm-130", title: "תהלים פרק קל",  subtitle: "מִמַּעֲמַקִּים קְרָאתִיךָ",        text: PSALM_130, group: "psalms" },
     { id: "igeret-ramban", title: "אגרת הרמב\"ן", subtitle: "שְׁמַע בְּנִי מוּסַר אָבִיךָ", text: IGERET_RAMBAN },
   );
 
@@ -363,130 +370,170 @@ export function PrayersClient({ defaultNusach, locale }: Props) {
 
       {/* Prayer cards */}
       <div className="space-y-3 mb-5">
-        {prayers.map((prayer) => {
-          const isOpen = openId === prayer.id;
-          return (
-            <div key={prayer.id}>
-            <div style={cardStyle}>
-              <button
-                className="w-full flex items-center justify-between p-4 text-right"
-                onClick={() => setOpenId(isOpen ? null : prayer.id)}
-              >
-                <div className="flex-1 text-right">
-                  <p className="font-bold text-sm" style={{ color: "var(--foreground)" }}>{prayer.title}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{prayer.subtitle}</p>
-                </div>
-                <svg
-                  className={`w-4 h-4 shrink-0 ms-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                  style={{ color: "var(--primary)" }}
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+        {(() => {
+          // Group consecutive same-group prayers into sections
+          type RenderSection = { group: string | null; items: PrayerSection[] };
+          const sections: RenderSection[] = [];
+          for (const p of prayers) {
+            const last = sections[sections.length - 1];
+            if (last && last.group !== null && last.group === p.group) {
+              last.items.push(p);
+            } else {
+              sections.push({ group: p.group ?? null, items: [p] });
+            }
+          }
 
-              {isOpen && (
-                <div style={{ borderTop: "1px solid var(--border)" }}>
-                  <div className="p-4">
-                    {prayer.images ? (
-                      <div className="space-y-3">
-                        {prayer.images.map((src, idx) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={idx}
-                            src={src}
-                            alt={prayer.title}
-                            className="w-full rounded-xl"
-                            style={{ maxWidth: "100%" }}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <pre
-                        className="text-base leading-loose whitespace-pre-wrap font-sans text-right"
-                        style={{ color: "var(--foreground)", direction: "rtl" }}
-                      >
-                        {prayer.text}
-                      </pre>
-                    )}
-                  </div>
-                  {!prayer.images && prayer.text && (
-                    <div className="px-4 pb-4">
-                      <button
-                        onClick={() => handleCopy(prayer.id, prayer.text!)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                        style={
-                          copied === prayer.id
-                            ? { background: "linear-gradient(135deg, #86efac, #4ade80)", color: "#14532d" }
-                            : {
-                                background: "linear-gradient(135deg, #c9a84c22, #c9a84c11)",
-                                color: "var(--primary)",
-                                border: "1px solid #c9a84c40",
-                              }
-                        }
-                      >
-                        {copied === prayer.id ? (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            הועתק!
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            העתק תפילה
-                          </>
-                        )}
-                      </button>
+          // Shared: render the open content of a prayer
+          function PrayerContent({ prayer }: { prayer: PrayerSection }) {
+            return (
+              <div style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="p-4">
+                  {prayer.images ? (
+                    <div className="space-y-3">
+                      {prayer.images.map((src, idx) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={idx} src={src} alt={prayer.title} className="w-full rounded-xl" />
+                      ))}
                     </div>
+                  ) : (
+                    <pre className="text-base leading-loose whitespace-pre-wrap font-sans text-right"
+                      style={{ color: "var(--foreground)", direction: "rtl" }}>
+                      {prayer.text}
+                    </pre>
                   )}
                 </div>
-              )}
-            </div>
-            {/* Psalm books — shown after the last psalm chapter */}
-            {prayer.id === "psalm-130" && (
-              <div
-                className="mt-3 p-4 rounded-2xl"
-                style={{
-                  background: "linear-gradient(135deg, #fff8e8, #fef3d0)",
-                  border: "1px solid #c9a84c50",
-                }}
-              >
-                <p className="font-bold text-xs mb-2" style={{ color: "#8b6010" }}>ספרי תהילים דיגיטליים</p>
-                <div className="flex flex-col gap-2">
-                  <a
-                    href="https://tehilim.co/neshama/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white transition-all"
-                    style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)" }}
-                  >
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    תהילים אותיות נשמה
-                  </a>
-                  <a
-                    href="https://www.mgketer.org/mikra/27"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-                    style={{ background: "var(--muted)", color: "var(--foreground)", border: "1px solid var(--border)" }}
-                  >
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    ספר תהילים מלא — מקראות גדולות
-                  </a>
-                </div>
+                {!prayer.images && prayer.text && (
+                  <div className="px-4 pb-4">
+                    <button
+                      onClick={() => handleCopy(prayer.id, prayer.text!)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                      style={copied === prayer.id
+                        ? { background: "linear-gradient(135deg, #86efac, #4ade80)", color: "#14532d" }
+                        : { background: "linear-gradient(135deg, #c9a84c22, #c9a84c11)", color: "var(--primary)", border: "1px solid #c9a84c40" }}
+                    >
+                      {copied === prayer.id ? (
+                        <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>הועתק!</>
+                      ) : (
+                        <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>העתק תפילה</>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-            </div>
-          );
-        })}
+            );
+          }
+
+          return sections.map((section, si) => {
+            // ── Single prayer (no group) ─────────────────────────────────────
+            if (section.group === null || section.items.length === 1) {
+              const prayer = section.items[0];
+              const isOpen = openId === prayer.id;
+              return (
+                <div key={prayer.id} style={cardStyle}>
+                  <button
+                    className="w-full flex items-center justify-between p-4 text-right"
+                    onClick={() => setOpenId(isOpen ? null : prayer.id)}
+                  >
+                    <div className="flex-1 text-right">
+                      <p className="font-bold text-sm" style={{ color: "var(--foreground)" }}>{prayer.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{prayer.subtitle}</p>
+                    </div>
+                    <svg className={`w-4 h-4 shrink-0 ms-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                      style={{ color: "var(--primary)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isOpen && <PrayerContent prayer={prayer} />}
+                </div>
+              );
+            }
+
+            // ── Psalms group — 2×2 grid ──────────────────────────────────────
+            if (section.group === "psalms") {
+              const openPrayer = section.items.find(p => openId === p.id);
+              return (
+                <div key={`section-psalms-${si}`}>
+                  <div style={cardStyle}>
+                    <div className="grid grid-cols-2">
+                      {section.items.map((prayer, idx) => {
+                        const isOpen = openId === prayer.id;
+                        const borderB = idx < 2 ? "1px solid var(--border)" : undefined;
+                        const borderL = idx % 2 === 0 ? "1px solid var(--border)" : undefined;
+                        return (
+                          <button
+                            key={prayer.id}
+                            onClick={() => setOpenId(isOpen ? null : prayer.id)}
+                            className="p-3 text-right transition-all"
+                            style={{
+                              borderBottom: borderB,
+                              borderLeft: borderL,
+                              background: isOpen ? "linear-gradient(135deg, #fff8e8, #fef3d0)" : undefined,
+                            }}
+                          >
+                            <p className="font-bold text-xs" style={{ color: isOpen ? "#8b6010" : "var(--foreground)" }}>{prayer.title}</p>
+                            <p className="text-xs mt-0.5 leading-tight" style={{ color: "var(--muted-foreground)", fontSize: "0.65rem" }}>{prayer.subtitle}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {openPrayer && <PrayerContent prayer={openPrayer} />}
+                  </div>
+                  {/* Psalm books link — shown below the psalms group */}
+                  <div className="mt-3 p-4 rounded-2xl" style={{ background: "linear-gradient(135deg, #fff8e8, #fef3d0)", border: "1px solid #c9a84c50" }}>
+                    <p className="font-bold text-xs mb-2" style={{ color: "#8b6010" }}>ספרי תהילים דיגיטליים</p>
+                    <div className="flex flex-col gap-2">
+                      <a href="https://tehilim.co/neshama/" target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white transition-all"
+                        style={{ background: "linear-gradient(135deg, #c9a84c, #8b6010)" }}>
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        תהילים אותיות נשמה
+                      </a>
+                      <a href="https://www.mgketer.org/mikra/27" target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                        style={{ background: "var(--muted)", color: "var(--foreground)", border: "1px solid var(--border)" }}>
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        ספר תהילים מלא — מקראות גדולות
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // ── Pair group (hashkava / el-maleh / refua) — 2 buttons in a row ──
+            const openPrayer = section.items.find(p => openId === p.id);
+            return (
+              <div key={`section-${section.group}-${si}`} style={cardStyle}>
+                <div className="grid grid-cols-2">
+                  {section.items.map((prayer, idx) => {
+                    const isOpen = openId === prayer.id;
+                    return (
+                      <button
+                        key={prayer.id}
+                        onClick={() => setOpenId(isOpen ? null : prayer.id)}
+                        className="flex items-center justify-between p-4 text-right transition-all"
+                        style={{
+                          borderLeft: idx === 0 ? "1px solid var(--border)" : undefined,
+                          background: isOpen ? "linear-gradient(135deg, #fff8e8, #fef3d0)" : undefined,
+                        }}
+                      >
+                        <div className="flex-1 text-right">
+                          <p className="font-bold text-sm" style={{ color: isOpen ? "#8b6010" : "var(--foreground)" }}>{prayer.title}</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)", fontSize: "0.65rem" }}>{prayer.subtitle}</p>
+                        </div>
+                        <svg className={`w-4 h-4 shrink-0 ms-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                          style={{ color: "var(--primary)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    );
+                  })}
+                </div>
+                {openPrayer && <PrayerContent prayer={openPrayer} />}
+              </div>
+            );
+          });
+        })()}
       </div>
 
       {/* Quick links row */}

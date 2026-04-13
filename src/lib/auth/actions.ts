@@ -6,20 +6,19 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function loginWithEmail(formData: FormData) {
   const supabase = await createClient();
+  const next = (formData.get("next") as string) || "/he";
 
-  const data = {
+  const { error } = await supabase.auth.signInWithPassword({
     email: formData.get("email") as string,
     password: formData.get("password") as string,
-  };
-
-  const { error } = await supabase.auth.signInWithPassword(data);
+  });
 
   if (error) {
     return { error: error.message };
   }
 
   revalidatePath("/", "layout");
-  redirect("/he");
+  redirect(next);
 }
 
 export async function registerWithEmail(formData: FormData) {
@@ -46,14 +45,15 @@ export async function registerWithEmail(formData: FormData) {
   redirect("/he");
 }
 
-export async function loginWithGoogle(locale: string = "he") {
+export async function loginWithGoogle(locale: string = "he", next?: string) {
   const supabase = await createClient();
   const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+  const nextParam = next ? `&next=${encodeURIComponent(next)}` : "";
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback?locale=${locale}`,
+      redirectTo: `${origin}/auth/callback?locale=${locale}${nextParam}`,
     },
   });
 
@@ -88,6 +88,7 @@ export async function verifyOtp(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;
   const token = formData.get("token") as string;
+  const next = (formData.get("next") as string) || "/he";
 
   const { error } = await supabase.auth.verifyOtp({
     email,
@@ -100,7 +101,7 @@ export async function verifyOtp(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/he");
+  redirect(next);
 }
 
 export async function logout() {

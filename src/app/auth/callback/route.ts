@@ -5,11 +5,13 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const locale = searchParams.get("locale") || "he";
+  const next = searchParams.get("next"); // optional post-login redirect path
 
   if (code) {
     const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(`${origin}/${locale}`);
+  const redirectPath = next ? decodeURIComponent(next) : `/${locale}`;
+  return NextResponse.redirect(`${origin}${redirectPath}`);
 }
