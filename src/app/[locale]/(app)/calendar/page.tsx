@@ -32,7 +32,7 @@ export default async function CalendarPage({
     );
   }
 
-  const [{ data: deceased }, { data: groups }] = await Promise.all([
+  const [{ data: primaryDeceased }, { data: groups }, { data: junctionLinks }] = await Promise.all([
     admin
       .from("deceased")
       .select("id, full_name, death_date_hebrew_day, death_date_hebrew_month, death_date_hebrew, death_date_gregorian, relationship_label, relationship_degree, photo_url, group_id")
@@ -41,9 +41,37 @@ export default async function CalendarPage({
       .from("family_groups")
       .select("id, name")
       .in("id", userGroupIds),
+    // Also get extra deceased linked via junction table
+    admin
+      .from("deceased_groups")
+      .select("deceased_id, group_id")
+      .in("group_id", userGroupIds),
   ]);
 
   const groupMap = new Map((groups ?? []).map((g) => [g.id, g.name as string]));
+
+  // Build a map: deceased_id -> all group IDs (primary + junction)
+  const deceasedExtraGroupIds = new Map<string, string[]>();
+  for (const link of junctionLinks ?? []) {
+    const arr = deceasedExtraGroupIds.get(link.deceased_id) ?? [];
+    arr.push(link.group_id);
+    deceasedExtraGroupIds.set(link.deceased_id, arr);
+  }
+
+  // Fetch extra deceased (those linked only via junction, not already in primary)
+  const primaryIds = new Set((primaryDeceased ?? []).map((d) => d.id));
+  const extraDeceasedIds = [...deceasedExtraGroupIds.keys()].filter((did) => !primaryIds.has(did));
+
+  let extraDeceased: typeof primaryDeceased = [];
+  if (extraDeceasedIds.length > 0) {
+    const { data } = await admin
+      .from("deceased")
+      .select("id, full_name, death_date_hebrew_day, death_date_hebrew_month, death_date_hebrew, death_date_gregorian, relationship_label, relationship_degree, photo_url, group_id")
+      .in("id", extraDeceasedIds);
+    extraDeceased = data ?? [];
+  }
+
+  const deceased = [...(primaryDeceased ?? []), ...(extraDeceased ?? [])];
 
   const allYahrzeits = (deceased || [])
     .map((d) => {
@@ -75,6 +103,10 @@ export default async function CalendarPage({
           sundayFormattedIfShabbat = `${String(sun.getDate()).padStart(2, "0")}/${String(sun.getMonth() + 1).padStart(2, "0")}/${sun.getFullYear()}`;
         }
 
+        const allGroupIds = [d.group_id, ...(deceasedExtraGroupIds.get(d.id) ?? [])]
+          .filter((gid): gid is string => !!gid && userGroupIds.includes(gid));
+        const allGroupNames = allGroupIds.map((gid) => groupMap.get(gid)).filter(Boolean) as string[];
+
         return {
           id: d.id,
           fullName: d.full_name,
@@ -82,6 +114,8 @@ export default async function CalendarPage({
           relationship: d.relationship_label as string | null,
           groupId: d.group_id as string,
           groupName: groupMap.get(d.group_id) ?? null,
+          groupIds: allGroupIds,
+          groupNames: allGroupNames,
           relationshipDegree: (d.relationship_degree as "first" | "second" | "extended" | null) ?? null,
           daysUntil: next.daysUntil,
           gregorianDay: gd.getDate(),
@@ -104,7 +138,8 @@ export default async function CalendarPage({
     .filter(Boolean)
     .sort((a, b) => a!.daysUntil - b!.daysUntil) as NonNullable<ReturnType<typeof getNextYahrzeit> extends never ? never : {
       id: string; fullName: string; photoUrl: string | null; relationship: string | null;
-      groupId: string; groupName: string | null; relationshipDegree: "first" | "second" | "extended" | null;
+      groupId: string; groupName: string | null; groupIds: string[]; groupNames: string[];
+      relationshipDegree: "first" | "second" | "extended" | null;
       daysUntil: number; gregorianDay: number; gregorianMonthShort: string;
       gregorianMonthLabel: string; gregorianFormatted: string; hebrewDate: string;
       shabbatEveFormatted: string | null; yearsElapsed: number | null;

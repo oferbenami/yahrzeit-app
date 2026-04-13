@@ -39,6 +39,8 @@ export interface YahrzeitItem {
   relationship: string | null;
   groupId: string;
   groupName: string | null;
+  groupIds: string[];       // all groups this deceased belongs to
+  groupNames: string[];     // names of all groups
   relationshipDegree: "first" | "second" | "extended" | null;
   daysUntil: number;
   gregorianDay: number;
@@ -50,9 +52,9 @@ export interface YahrzeitItem {
   yearsElapsed: number | null;
   isToday: boolean;
   isSoon: boolean;
-  dayOfWeekHe: string;        // e.g. "יום שלישי"
-  isSaturday: boolean;        // true if yahrzeit falls on Shabbat
-  sundayFormattedIfShabbat: string | null; // DD/MM/YYYY of the Sunday when deferred
+  dayOfWeekHe: string;
+  isSaturday: boolean;
+  sundayFormattedIfShabbat: string | null;
 }
 
 export interface GroupOption {
@@ -85,7 +87,7 @@ export function CalendarClient({
   };
 
   const groupFiltered = useMemo(
-    () => (selectedGroupId ? items.filter((y) => y.groupId === selectedGroupId) : items),
+    () => (selectedGroupId ? items.filter((y) => y.groupIds.includes(selectedGroupId)) : items),
     [items, selectedGroupId]
   );
 
@@ -160,7 +162,7 @@ export function CalendarClient({
               כל הקבוצות ({items.length})
             </button>
             {groups.map((g) => {
-              const count = items.filter((y) => y.groupId === g.id).length;
+              const count = items.filter((y) => y.groupIds.includes(g.id)).length;
               const isActive = selectedGroupId === g.id;
               return (
                 <button
@@ -317,6 +319,11 @@ export function CalendarClient({
                         {y.hebrewDate}
                         {y.relationship && ` • ${y.relationship}`}
                       </p>
+                      {y.groupNames.length > 0 && (
+                        <p className="text-xs truncate" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
+                          {y.groupNames.join(" • ")}
+                        </p>
+                      )}
                       <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                         {y.dayOfWeekHe} • {y.gregorianFormatted}
                         {y.yearsElapsed !== null && (
