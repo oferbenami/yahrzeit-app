@@ -69,11 +69,13 @@ export async function loginWithGoogle(locale: string = "he", next?: string) {
 export async function sendOtp(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;
+  const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: true,
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
