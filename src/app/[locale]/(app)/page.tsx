@@ -3,9 +3,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { getUpcomingYahrzeits } from "@/lib/hebrew-calendar";
 import { gregorianToHebrew } from "@/lib/hebrew-calendar";
+import { getUpcomingHolidays } from "@/lib/holidays";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { LogoutButton } from "@/components/ui/LogoutButton";
 import { ShareAppButton } from "@/components/ui/ShareAppButton";
+import { TodayReminderModal } from "@/components/ui/TodayReminderModal";
 
 function CandleIcon() {
   return (
@@ -78,10 +80,36 @@ export default async function HomePage({
   const upcoming = upcomingYahrzeits.filter((y) => y.daysUntil > 7);
 
   const upcoming30 = getUpcomingYahrzeits(deceased || [], 30);
+
+  // Modal: today (daysUntil=0) and tonight (daysUntil=1, starts this evening)
+  const modalYahrzeits = upcomingYahrzeits
+    .filter((y) => y.daysUntil === 0 || y.daysUntil === 1)
+    .map((y) => ({
+      deceasedId: y.deceasedId,
+      fullName: y.fullName,
+      hebrewDate: y.yahrzeit.hebrewDate.hebrewString,
+      daysUntil: y.daysUntil,
+    }));
+
+  const now = Date.now();
+  const modalHolidays = getUpcomingHolidays()
+    .map((h) => ({
+      ...h,
+      daysUntil: Math.ceil((h.gregorianTimestamp - now) / (1000 * 60 * 60 * 24)),
+    }))
+    .filter((h) => h.daysUntil === 0 || h.daysUntil === 1)
+    .map((h) => ({
+      name: h.name,
+      description: h.description,
+      types: h.types as string[],
+      daysUntil: h.daysUntil,
+    }));
+
   const activeReminders = reminders?.filter((r) => r.active).length || 0;
   const upcomingGatherings = gatherings?.length || 0;
 
   const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
   const hebrewToday = gregorianToHebrew(today);
   const firstName = userProfile?.full_name?.split(" ")[0] || "";
 
@@ -94,6 +122,12 @@ export default async function HomePage({
 
   return (
     <div className="max-w-2xl mx-auto">
+      <TodayReminderModal
+        yahrzeits={modalYahrzeits}
+        holidays={modalHolidays}
+        locale={locale}
+        todayStr={todayStr}
+      />
       {/* Header */}
       <div className="mb-6 animate-fade-in-up">
         <div className="flex items-start justify-between">
