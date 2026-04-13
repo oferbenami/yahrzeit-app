@@ -5,6 +5,7 @@ import { getUpcomingYahrzeits } from "@/lib/hebrew-calendar";
 import { gregorianToHebrew } from "@/lib/hebrew-calendar";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { LogoutButton } from "@/components/ui/LogoutButton";
+import { ShareAppButton } from "@/components/ui/ShareAppButton";
 
 function CandleIcon() {
   return (
@@ -120,6 +121,7 @@ export default async function HomePage({
                 הוסף נפטר
               </Link>
             )}
+            <ShareAppButton />
             <LogoutButton locale={locale} />
           </div>
         </div>
