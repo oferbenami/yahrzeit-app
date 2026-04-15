@@ -23,6 +23,7 @@ export async function loginWithEmail(formData: FormData) {
 
 export async function registerWithEmail(formData: FormData) {
   const supabase = await createClient();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -34,6 +35,7 @@ export async function registerWithEmail(formData: FormData) {
     password,
     options: {
       data: { full_name, phone },
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
@@ -41,8 +43,7 @@ export async function registerWithEmail(formData: FormData) {
     return { error: error.message };
   }
 
-  revalidatePath("/", "layout");
-  redirect("/he");
+  return { success: true };
 }
 
 export async function loginWithGoogle(locale: string = "he", next?: string) {
